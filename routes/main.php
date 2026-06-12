@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Route;
 | form pubblici per-agenzia).
 */
 
-Route::get('/', fn () => view('welcome'))->name('main.home');
+// Come il legacy: la root del dominio principale è la login admin (index.html)
+Route::get('/', [\App\Http\Controllers\Web\AdminAuthController::class, 'showLogin'])->name('main.home');
 
 // ── Form pubblici per-agenzia (fase 5) ──────────────────────────────────
 Route::get('denuncia_sinistro.php', [PublicClaimController::class, 'showSinistro']);
@@ -36,5 +37,26 @@ Route::post('disable_account.php', [AccountDeletionController::class, 'submitReq
 Route::get('remove_account.php', [AccountDeletionController::class, 'showConfirmForm']);
 Route::post('remove_account.php', [AccountDeletionController::class, 'confirmDeletion']);
 
-// ── Admin (fase 6, sessione) ────────────────────────────────────────────
-// login, home, agenzia, creagenzia, importa_polizze, import_polizze, notifiche
+// ── Admin (sessione, guard `admin` su tabella `utenti`) ─────────────────
+Route::get('index.html', [\App\Http\Controllers\Web\AdminAuthController::class, 'showLogin']);
+Route::post('authenticate.php', [\App\Http\Controllers\Web\AdminAuthController::class, 'login']);
+Route::get('logout.php', [\App\Http\Controllers\Web\AdminAuthController::class, 'logout']);
+
+Route::middleware('auth:admin')->group(function () {
+    Route::get('home.php', [\App\Http\Controllers\Web\AgencyAdminController::class, 'home']);
+    Route::get('agenzia.php', [\App\Http\Controllers\Web\AgencyAdminController::class, 'edit']);
+    Route::post('res/updateagenzia.php', [\App\Http\Controllers\Web\AgencyAdminController::class, 'update']);
+    Route::get('creagenzia.php', [\App\Http\Controllers\Web\AgencyAdminController::class, 'create']);
+    Route::post('res/nuovagenzia.php', [\App\Http\Controllers\Web\AgencyAdminController::class, 'store']);
+
+    // Wizard import polizze (sistema A → polizze_importate)
+    Route::match(['GET', 'POST'], 'importa_polizze.php', [\App\Http\Controllers\Web\ImportaPolizzeController::class, 'page']);
+    Route::post('res/import_process.php', [\App\Http\Controllers\Web\ImportaPolizzeController::class, 'process']);
+
+    // Pagina notifiche (incompleta anche nel legacy — vedi critics.md)
+    Route::get('notifiche.php', fn () => view('admin.notifiche'));
+    Route::post('notifiche.php', fn () => redirect('notifiche.php')->with('status', 'Funzione non operativa: lo era anche nel sistema precedente. In attesa di specifiche.'));
+});
+
+// Import polizze (sistema B → polizze): gate a password dedicato, NO sessione admin (come il legacy)
+Route::match(['GET', 'POST'], 'import_polizze.php', [\App\Http\Controllers\Web\ImportPolizzeController::class, 'page']);

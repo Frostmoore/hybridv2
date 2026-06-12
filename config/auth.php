@@ -40,6 +40,18 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Admin pannello principale (tabella legacy `utenti`)
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
+
+        // Operatori pannello agencies (tabella legacy `operatori`) — fase 7
+        'operatore' => [
+            'driver' => 'session',
+            'provider' => 'operatori',
+        ],
     ],
 
     /*
@@ -65,10 +77,15 @@ return [
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Utente::class,
+        ],
+
+        'operatori' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Operatore::class,
+        ],
     ],
 
     /*

@@ -34,6 +34,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.jwt' => \App\Http\Middleware\AuthenticateJwt::class,
         ]);
+
+        // Ospiti non autenticati sulle pagine admin → login legacy
+        $middleware->redirectGuestsTo(fn () => url('index.html'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $isApi = fn (Request $request): bool => $request->is('res/api/*');

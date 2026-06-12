@@ -23,14 +23,15 @@ return new class extends Migration
             $table->string('desc_prodotto', 255)->nullable();
             $table->string('compagnia', 255)->nullable();
             $table->string('targa', 30)->nullable();
-            $table->string('data_effetto', 20)->nullable();
-            $table->string('data_scadenza', 20)->nullable();
-            $table->string('data_effetto_titolo', 20)->nullable();
+            $table->date('data_effetto')->nullable();
+            $table->date('data_scadenza')->nullable();
+            $table->date('data_effetto_titolo')->nullable();  // usata dal cron notifiche
             $table->string('stato', 100)->nullable();
-            $table->decimal('premio', 12, 2)->nullable();
-            $table->text('raw_data')->nullable();          // riga sorgente serializzata
+            $table->decimal('premio', 10, 2)->nullable();
+            $table->text('raw_data')->nullable();             // riga sorgente JSON
             $table->string('fonte', 50)->default('import');
-            $table->string('nome_file', 255)->nullable();
+            $table->string('nome_file', 255)->default('');
+            $table->dateTime('importato_il')->useCurrent();
 
             $table->index(['cf', 'id_agenzia']);
             $table->index('cliente_id');
