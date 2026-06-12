@@ -33,4 +33,14 @@ return [
 
     'import_password' => env('IMPORT_PASSWORD', ''),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Super-admin del pannello agencies
+    |--------------------------------------------------------------------------
+    | Il legacy hardcodava questi username in operators.php/user_panel.php
+    | (vedi critics.md). Qui almeno sono configurabili.
+    */
+
+    'agencies_superadmins' => ['Sara Appolloni', 'smp-webmaster'],
+
 ];

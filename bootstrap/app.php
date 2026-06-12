@@ -33,10 +33,13 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
             'auth.jwt' => \App\Http\Middleware\AuthenticateJwt::class,
+            'operatore.timeout' => \App\Http\Middleware\OperatoreSessionTimeout::class,
         ]);
 
-        // Ospiti non autenticati sulle pagine admin → login legacy
-        $middleware->redirectGuestsTo(fn () => url('index.html'));
+        // Ospiti non autenticati → pagina di login del dominio giusto
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->getHost() === config('hybrid.domain_agencies')
+            ? url('login.php')
+            : url('index.html'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $isApi = fn (Request $request): bool => $request->is('res/api/*');
