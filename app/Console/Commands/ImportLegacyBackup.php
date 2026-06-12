@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Support\LegacyRowSanitizer;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Importa nel DB locale un backup JSON giornaliero del server legacy
- * (il dump prodotto da cron_scadenze.php: { tabella: [righe…], … }).
+ * Importa nel DB locale un backup JSON giornaliero (il dump prodotto da
+ * cron_scadenze.php legacy o da hybrid:backup-db: { tabella: [righe…], … }).
  *
- * Pensato per lo sviluppo; l'importer definitivo della fase 9 leggerà
- * l'export NDJSON dell'exporter dedicato.
+ * Pensato per lo sviluppo; la migrazione definitiva usa hybrid:import-legacy
+ * con l'export NDJSON di export_db.php.
  *
  *   php artisan hybrid:import-backup ../legacy/public_html/backup/backup_2026-06-11.json
  */
@@ -22,30 +23,6 @@ class ImportLegacyBackup extends Command
     protected $signature = 'hybrid:import-backup {file : Path del backup JSON legacy} {--no-truncate : Non svuotare le tabelle prima}';
 
     protected $description = 'Importa un backup JSON del server legacy nel database locale (dev)';
-
-    /** Colonne DATETIME: '' → NULL, NULL preservato. */
-    private const DATETIME_COLUMNS = [
-        'clienti' => ['firstlogin', 'lastlogin'],
-        'operatori' => ['first_login', 'last_login'],
-        'notifiche_generali' => ['notifica_scadenza'],
-        'delete_requests' => ['expiration'],
-    ];
-
-    /** Colonne INTERE (nullable): '' → NULL, NULL preservato. */
-    private const INT_COLUMNS = [
-        'clienti' => ['agenziaid'],
-        'operatori' => ['agid'],
-        'notifiche' => ['agenziaid'],
-        'notifiche_generali' => ['notifica_agid'],
-        'sinistri' => ['id_agenzia'],
-        'preventivi' => ['id_agenzia'],
-        'documenti' => ['id_agenzia'],
-        'polizze' => ['id_agenzia'],
-        'polizze_importate' => ['id_agenzia', 'cliente_id'],
-    ];
-
-    /** Tabelle legacy deliberatamente NON importate. */
-    private const SKIP = ['agenzie']; // morta (decisione §7.3)
 
     public function handle(): int
     {
@@ -64,7 +41,7 @@ class ImportLegacyBackup extends Command
         }
 
         foreach ($dump as $table => $rows) {
-            if (in_array($table, self::SKIP, true)) {
+            if (in_array($table, LegacyRowSanitizer::SKIP_TABLES, true)) {
                 $this->warn("− $table: saltata (tabella morta)");
 
                 continue;
@@ -82,24 +59,10 @@ class ImportLegacyBackup extends Command
                 DB::table($table)->truncate();
             }
 
-            $datetimeCols = self::DATETIME_COLUMNS[$table] ?? [];
-            $intCols = self::INT_COLUMNS[$table] ?? [];
-            $clean = array_map(function (array $row) use ($datetimeCols, $intCols) {
-                foreach ($row as $col => $value) {
-                    if (in_array($col, $datetimeCols, true) || in_array($col, $intCols, true)) {
-                        // datetime/interi: '' non è valido → NULL
-                        if ($value === '') {
-                            $row[$col] = null;
-                        }
-                    } elseif ($value === null) {
-                        // stringhe: il legacy permetteva NULL, lo schema nuovo
-                        // usa NOT NULL DEFAULT '' (s() li rende comunque '')
-                        $row[$col] = '';
-                    }
-                }
-
-                return $row;
-            }, $rows);
+            $clean = array_map(
+                fn (array $row) => LegacyRowSanitizer::sanitize($table, $row),
+                $rows,
+            );
 
             foreach (array_chunk($clean, 500) as $chunk) {
                 DB::table($table)->insert($chunk);
