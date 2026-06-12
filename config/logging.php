@@ -73,6 +73,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Cron scadenze/backup: rotazione 30 giorni (il log legacy era
+        // arrivato a 450MB senza rotazione, vedi critics.md)
+        'cron' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/cron.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

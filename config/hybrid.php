@@ -43,4 +43,17 @@ return [
 
     'agencies_superadmins' => ['Sara Appolloni', 'smp-webmaster'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cron scadenze polizze
+    |--------------------------------------------------------------------------
+    | days_before: giorni di preavviso default; override per agenzia
+    | (il legacy hardcodava [37 => 5] in cron_notifiche_scadenze.php).
+    */
+
+    'scadenze_days_before' => 15,
+    'scadenze_days_override' => [
+        37 => 5,
+    ],
+
 ];
