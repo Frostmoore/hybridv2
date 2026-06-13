@@ -76,4 +76,14 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Immagini per-agenzia (logo/header/...)
+    |--------------------------------------------------------------------------
+    | Cartella base dei file immagine serviti a /res/img/<id>/... I test la
+    | puntano altrove per non cancellare le immagini reali di sviluppo.
+    */
+
+    'agency_assets_path' => env('AGENCY_ASSETS_PATH') ?: storage_path('app/agency-assets'),
+
 ];

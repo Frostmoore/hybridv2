@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\AgenziaNew;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -127,7 +128,7 @@ class AgencyAdminController extends Controller
     /** Salva i PNG caricati e aggiorna i path relativi sul model. */
     private function saveImages(Request $request, AgenziaNew $agenzia): void
     {
-        $dir = storage_path('app/agency-assets/img/'.$agenzia->id);
+        $dir = config('hybrid.agency_assets_path').'/img/'.$agenzia->id;
 
         foreach (self::IMAGE_FIELDS as $field) {
             $file = $request->file($field);
@@ -139,7 +140,16 @@ class AgencyAdminController extends Controller
                 continue;
             }
             File::ensureDirectoryExists($dir);
-            $file->move($dir, $field.'.png');
+            $dest = $dir.'/'.$field.'.png';
+
+            if ($field === 'header_agenzia') {
+                // La testata si auto-comprime in upload (resize a max 1200 + JPEG):
+                // i background mobili da più MB sono inutili e pesanti.
+                ImageOptimizer::optimize($file->getRealPath(), $dest);
+            } else {
+                $file->move($dir, $field.'.png');
+            }
+
             $agenzia->{$field} = 'img/'.$agenzia->id.'/'.$field.'.png';
         }
     }

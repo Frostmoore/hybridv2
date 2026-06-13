@@ -212,6 +212,12 @@ body.adm {
     color: var(--adm-ink);
 }
 
+.adm-btn--sm {
+    padding: 6px 12px;
+    font-size: .82rem;
+    border-radius: 9px;
+}
+
 /* ── Ricerca ────────────────────────────────────────────────────────────── */
 .adm-search {
     position: relative;
@@ -777,6 +783,42 @@ body.adm {
 .adm-table .adm-input {
     padding: 6px 9px;
     font-size: .82rem;
+}
+
+/* Azioni per riga: sempre in linea, mai impilate */
+.adm-table .adm-rowactions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    align-items: center;
+}
+
+.adm-table .adm-rowactions form {
+    margin: 0;
+}
+
+.adm-table .adm-rowactions .adm-btn {
+    white-space: nowrap;
+}
+
+/* Celle lunghe (email, nome, agenzia): troncamento con ellissi invece di allargare */
+.adm-table .adm-ellipsis {
+    max-width: 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.adm-table .adm-ellipsis .adm-chip {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+}
+
+.adm-table td.adm-nowrap,
+.adm-table th.adm-nowrap {
+    white-space: nowrap;
 }
 
 /* ── Log / output ───────────────────────────────────────────────────────── */

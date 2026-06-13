@@ -18,7 +18,7 @@ class AssetController extends Controller
 {
     public function show(Request $request, string $path): BinaryFileResponse
     {
-        $base = storage_path('app/agency-assets');
+        $base = (string) config('hybrid.agency_assets_path');
         $full = realpath($base.DIRECTORY_SEPARATOR.$path);
 
         // Niente path traversal, niente file fuori dalla cartella

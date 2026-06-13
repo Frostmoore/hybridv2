@@ -26,10 +26,23 @@ class AdminPanelTest extends V2TestCase
         ]);
     }
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Path isolato: i test NON devono toccare le immagini reali di sviluppo
+        config(['hybrid.agency_assets_path' => storage_path('app/test-agency-assets')]);
+        File::deleteDirectory(storage_path('app/test-agency-assets'));
+    }
+
     protected function tearDown(): void
     {
-        File::deleteDirectory(storage_path('app/agency-assets'));
+        File::deleteDirectory(storage_path('app/test-agency-assets'));
         parent::tearDown();
+    }
+
+    private function assetPath(string $rel): string
+    {
+        return config('hybrid.agency_assets_path').'/'.$rel;
     }
 
     // ─── Auth ────────────────────────────────────────────────────────────
@@ -170,6 +183,73 @@ class AdminPanelTest extends V2TestCase
         $this->assertSame(0, \App\Models\NotificaGenerale::count());
     }
 
+    // ─── Utenti (cross-agenzia) ──────────────────────────────────────────
+
+    public function test_utenti_requires_admin(): void
+    {
+        $this->get($this->host('utenti'))->assertRedirect($this->host('login'));
+    }
+
+    public function test_utenti_lists_all_agencies_and_searches(): void
+    {
+        $admin = $this->admin();
+        $a = $this->makeAgency(['nome_agenzia' => 'Agenzia Uno', 'token' => 'a']);
+        $b = $this->makeAgency(['nome_agenzia' => 'Agenzia Due', 'token' => 'b']);
+        $this->makeCliente($a, ['username' => 'mario.rossi', 'email' => 'mario@x.it', 'cf' => 'CFA']);
+        $this->makeCliente($b, ['username' => 'luigi.verdi', 'email' => 'luigi@x.it', 'cf' => 'CFB']);
+
+        // Elenco: entrambi gli utenti e i nomi agenzia
+        $this->actingAs($admin, 'admin')->get($this->host('utenti'))
+            ->assertOk()
+            ->assertSee('mario.rossi')->assertSee('luigi.verdi')
+            ->assertSee('Agenzia Uno')->assertSee('Agenzia Due');
+
+        // Ricerca server-side
+        $this->actingAs($admin, 'admin')->get($this->host('utenti?q=luigi'))
+            ->assertOk()
+            ->assertSee('luigi.verdi')
+            ->assertDontSee('mario.rossi');
+    }
+
+    public function test_utente_attiva(): void
+    {
+        $admin = $this->admin();
+        $agency = $this->makeAgency();
+        $cliente = $this->makeCliente($agency, ['active' => '0']);
+
+        $this->actingAs($admin, 'admin')
+            ->from($this->host('utenti'))
+            ->post($this->host('utenti/'.$cliente->id.'/attiva'))
+            ->assertRedirect($this->host('utenti'));
+
+        $this->assertSame('1', (string) $cliente->fresh()->active);
+    }
+
+    public function test_utente_send_reset_email(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        $admin = $this->admin();
+        $agency = $this->makeAgency();
+        $cliente = $this->makeCliente($agency, ['email' => 'reset@test.it', 'activation_token' => 'vecchio']);
+
+        $this->actingAs($admin, 'admin')
+            ->from($this->host('utenti'))
+            ->post($this->host('utenti/'.$cliente->id.'/reset-password'))
+            ->assertRedirect($this->host('utenti'));
+
+        // Token rigenerato (link precedenti invalidati)
+        $newToken = $cliente->fresh()->activation_token;
+        $this->assertNotSame('vecchio', $newToken);
+        $this->assertNotEmpty($newToken);
+
+        // Email col link cambiapassword e il token nuovo
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\LegacyHtmlMail::class, function ($m) use ($cliente, $newToken) {
+            return $m->hasTo('reset@test.it')
+                && str_contains($m->htmlBody, 'cambiapassword.php?a='.$cliente->id)
+                && str_contains($m->htmlBody, 'b='.$newToken);
+        });
+    }
+
     // ─── Creazione agenzia ───────────────────────────────────────────────
 
     public function test_create_agency_requires_logo(): void
@@ -200,7 +280,7 @@ class AdminPanelTest extends V2TestCase
         $this->assertMatchesRegularExpression('/^[0-9a-zA-Z]{10}$/', $agenzia->token);   // token legacy 10 char
         $this->assertSame('1', $agenzia->attiva);
         $this->assertSame('img/'.$agenzia->id.'/logo_agenzia.png', $agenzia->logo_agenzia);
-        $this->assertFileExists(storage_path('app/agency-assets/img/'.$agenzia->id.'/logo_agenzia.png'));
+        $this->assertFileExists($this->assetPath('img/'.$agenzia->id.'/logo_agenzia.png'));
     }
 
     public function test_create_page_renders(): void
@@ -243,8 +323,28 @@ class AdminPanelTest extends V2TestCase
         $this->assertSame('Rinominata', $fresh->nome_agenzia);
         $this->assertSame('0612345678', $fresh->quick_telefono);
         $this->assertSame('img/'.$agenzia->id.'/header_agenzia.png', $fresh->header_agenzia);
+        // La testata viene auto-compressa in JPEG (contenuto), pur restando .png
+        $path = $this->assetPath('img/'.$agenzia->id.'/header_agenzia.png');
+        $this->assertFileExists($path);
+        $this->assertSame(IMAGETYPE_JPEG, getimagesize($path)[2]);
         // Il token NON cambia in update
         $this->assertSame('agency-token-123', $fresh->token);
+    }
+
+    public function test_header_upload_is_downscaled_and_compressed(): void
+    {
+        $admin = $this->admin();
+        $agenzia = $this->makeAgency();
+
+        // Testata "grande" 2000px → deve scendere a max 1200 ed essere JPEG
+        $this->actingAs($admin, 'admin')->post($this->host('agenzia/'.$agenzia->id), [
+            'header_agenzia' => UploadedFile::fake()->image('header.png', 2000, 1000),
+        ])->assertRedirect($this->host('agenzia/'.$agenzia->id));
+
+        $path = $this->assetPath('img/'.$agenzia->id.'/header_agenzia.png');
+        $info = getimagesize($path);
+        $this->assertLessThanOrEqual(1200, $info[0]);   // larghezza ridotta
+        $this->assertSame(IMAGETYPE_JPEG, $info[2]);     // ricompressa JPEG
     }
 
     public function test_update_rejects_non_png_image(): void

@@ -10,13 +10,16 @@ class AssetTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        File::ensureDirectoryExists(storage_path('app/agency-assets/img/6'));
-        file_put_contents(storage_path('app/agency-assets/img/6/logo_agenzia.png'), 'fake-png');
+        // Path isolato: non scrivere/cancellare le immagini reali di sviluppo
+        config(['hybrid.agency_assets_path' => storage_path('app/test-agency-assets')]);
+        File::deleteDirectory(storage_path('app/test-agency-assets'));
+        File::ensureDirectoryExists(config('hybrid.agency_assets_path').'/img/6');
+        file_put_contents(config('hybrid.agency_assets_path').'/img/6/logo_agenzia.png', 'fake-png');
     }
 
     protected function tearDown(): void
     {
-        File::deleteDirectory(storage_path('app/agency-assets'));
+        File::deleteDirectory(storage_path('app/test-agency-assets'));
         parent::tearDown();
     }
 

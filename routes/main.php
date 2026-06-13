@@ -73,6 +73,11 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('notifiche', [\App\Http\Controllers\Web\AdminNotificationController::class, 'page']);
     Route::post('notifiche', [\App\Http\Controllers\Web\AdminNotificationController::class, 'broadcast']);
     Route::get('notifiche.php', fn () => redirect('/notifiche'));
+
+    // Utenti (tutte le agenzie): elenco, attivazione, invio reset password
+    Route::get('utenti', [\App\Http\Controllers\Web\AdminUserController::class, 'index']);
+    Route::post('utenti/{id}/attiva', [\App\Http\Controllers\Web\AdminUserController::class, 'activate'])->whereNumber('id');
+    Route::post('utenti/{id}/reset-password', [\App\Http\Controllers\Web\AdminUserController::class, 'sendReset'])->whereNumber('id');
 });
 
 // Import polizze (sistema B → polizze): gate a password dedicato, NO sessione admin (come il legacy)
