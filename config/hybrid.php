@@ -56,4 +56,21 @@ return [
         37 => 5,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Override email destinatarie per agenzia
+    |--------------------------------------------------------------------------
+    | Il legacy hardcodava nel codice (`if id===17`) gli indirizzi di alcune
+    | agenzie, con destinatari diversi per sinistro e preventivo (vedi
+    | critics.md). Qui sono configurabili: per ogni agenzia, override per tipo
+    | ('denuncia' = sinistri, 'preventivo'). Assente → si usano i campi DB.
+    */
+
+    'agency_mail_overrides' => [
+        17 => [
+            'denuncia' => 'sinistri@catinoassicurazioni.it',
+            'preventivo' => 'g.deluca@catinoassicurazioni.it',
+        ],
+    ],
+
 ];

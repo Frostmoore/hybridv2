@@ -7,15 +7,21 @@ namespace App\Console\Commands;
 use App\Models\AgenziaNew;
 use App\Models\Cliente;
 use App\Models\Notifica;
+use App\Models\ScadenzaNotificata;
 use App\Services\AssiEasyService;
 use App\Services\OneSignalService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Legge il file scadenze del giorno e, per le polizze esattamente a N giorni
- * dalla DATA_EFFETTO_TITOLO (default 15, override per agenzia), invia il push
+ * Legge il file scadenze del giorno e, per le polizze entro N giorni dalla
+ * DATA_EFFETTO_TITOLO (default 15, override per agenzia), invia il push
  * OneSignal e salva la notifica in-app. Porting di cron_notifiche_scadenze.php.
+ *
+ * Differenza dal legacy (vedi critics.md): finestra `0 ≤ days ≤ N` invece del
+ * giorno esatto, con deduplica via `scadenze_notificate` (unique per
+ * id_polizza+data_effetto): se il cron salta un giorno la notifica viene
+ * recuperata al run successivo, ma ogni scadenza è notificata UNA sola volta.
  */
 class ScadenzeNotifiche extends Command
 {
@@ -81,7 +87,17 @@ class ScadenzeNotifiche extends Command
             $daysBefore = (int) ($override[$agenziaId] ?? $defaultDays);
             $days = $this->daysUntil((string) $dataEff, $oggi);
 
-            if ($days !== $daysBefore) {
+            // Finestra di preavviso: da N giorni prima fino al giorno di scadenza.
+            if ($days < 0 || $days > $daysBefore) {
+                $skip++;
+
+                continue;
+            }
+
+            // Deduplica: questa polizza/scadenza è già stata notificata?
+            if (ScadenzaNotificata::where('id_polizza', $pid)
+                ->where('data_effetto_titolo', (string) $dataEff)
+                ->exists()) {
                 $skip++;
 
                 continue;
@@ -98,9 +114,10 @@ class ScadenzeNotifiche extends Command
                 $det = $this->dettagliPolizza($assiEasy, $cliente, $pid);
 
                 $titolo = 'Scadenza polizza imminente';
+                $quando = $days === 0 ? 'scadrà oggi' : 'scadrà tra '.$days.' giorni';
                 $testo = 'Gentile '.$cliente->cognome.' '.$cliente->nome.', la tua polizza '
                     .$det['ramo'].($det['targa'] ? ' - '.$det['targa'] : '')
-                    .' scadrà tra '.$daysBefore.' giorni. Contatta il tuo agente per il rinnovo.';
+                    .' '.$quando.'. Contatta il tuo agente per il rinnovo.';
 
                 $payload = $oneSignal->buildPayload((string) $r['os_app_id'], $titolo, $testo, [(string) $r['playerid']], null);
                 [$status] = $oneSignal->send((string) $r['os_api_key'], $payload);
@@ -117,6 +134,14 @@ class ScadenzeNotifiche extends Command
                         'destinatari' => (string) $cliente->username,
                         'agenziaid' => $agenziaId,
                         'dataora' => now()->format('Y-m-d H:i:s'),
+                    ]);
+
+                    // Marca la scadenza come notificata (dedup per i run successivi)
+                    ScadenzaNotificata::create([
+                        'id_polizza' => $pid,
+                        'data_effetto_titolo' => (string) $dataEff,
+                        'cliente_id' => $cid,
+                        'notified_at' => now(),
                     ]);
                 } else {
                     $log->error("Push FAIL polizza $pid HTTP $status");

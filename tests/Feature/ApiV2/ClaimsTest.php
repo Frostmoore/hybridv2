@@ -49,6 +49,32 @@ class ClaimsTest extends V2TestCase
             ->assertJsonPath('code', 'VALIDATION_ERROR');
     }
 
+    public function test_sinistro_mail_uses_config_override(): void
+    {
+        $agency = $this->makeAgency();   // denuncia_mail default: sinistri@test.it
+        $cliente = $this->makeCliente($agency);
+
+        // override per QUESTA agenzia → la mail deve andare all'indirizzo di config,
+        // non a quello del DB (sostituisce l'hardcoded `if id===17` del legacy)
+        config(['hybrid.agency_mail_overrides' => [
+            $agency->id => ['denuncia' => 'override@catino.it'],
+        ]]);
+
+        $this->post('/res/api/v2/claims/sinistro.php', [
+            'data' => json_encode([
+                'option' => 1, 'nome' => 'Mario', 'cognome' => 'Rossi',
+                'email' => 'mario@test.it', 'dataSinistro' => '2026-06-10',
+                'descrizione' => 'x', 'privacy' => '1',
+            ]),
+            'fotoCAI' => UploadedFile::fake()->image('cai.jpg'),
+            'fronteDoc' => UploadedFile::fake()->image('fronte.png'),
+            'retroDoc' => UploadedFile::fake()->image('retro.png'),
+        ], $this->authHeaders($cliente))->assertStatus(201);
+
+        Mail::assertSent(LegacyHtmlMail::class, fn (LegacyHtmlMail $m) => $m->hasTo('override@catino.it'));
+        Mail::assertNotSent(LegacyHtmlMail::class, fn (LegacyHtmlMail $m) => $m->hasTo('sinistri@test.it'));
+    }
+
     public function test_sinistro_option1_creates_row_zip_and_mail(): void
     {
         $agency = $this->makeAgency();

@@ -36,6 +36,7 @@ class AuthController extends V2Controller
             'nome' => $s($user->nome),
             'cognome' => $s($user->cognome),
             'cf' => $s($user->cf),
+            'piva' => $s($user->piva),
             'datadinascita' => $s($user->datadinascita),
             'agenziaid' => $s($user->agenziaid),
             'playerid' => $s($user->playerid),

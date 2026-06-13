@@ -10,6 +10,7 @@ use App\Models\Documento;
 use App\Models\Preventivo;
 use App\Models\Sinistro;
 use App\Support\ApiResponse;
+use App\Support\LegacyRowSanitizer;
 use App\Support\LegacyText;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -48,14 +49,10 @@ class ClaimsController extends V2Controller
         }
 
         $agencyName = ApiResponse::s($agency->nome_agenzia);
-        $denunciaMail = LegacyText::normalizeEmail($agency->denuncia_mail);
-        if ($agencyId === 17) {
-            // ⚠️ caso speciale hardcoded ereditato dal legacy (vedi critics.md)
-            $denunciaMail = 'sinistri@catinoassicurazioni.it';
-        }
+        $denunciaMail = $this->agencyMail($agencyId, 'denuncia', $agency->denuncia_mail);
 
         $s = ApiResponse::s(...);
-        $privacy = $s($payload['privacy'] ?? '');
+        $privacy = LegacyRowSanitizer::normalizeBool($payload['privacy'] ?? null);
 
         if ($option === 1) {
             $nomecompleto = trim($s($payload['cognome'] ?? '').' '.$s($payload['nome'] ?? ''));
@@ -165,7 +162,7 @@ class ClaimsController extends V2Controller
         $telefono = $s($payload['telefono'] ?? '');
         $indirizzo = $s($payload['indirizzo'] ?? '');
         $descrizione = $s($payload['descrizione'] ?? '');
-        $privacy = $s($payload['privacy'] ?? '');
+        $privacy = LegacyRowSanitizer::normalizeBool($payload['privacy'] ?? null);
 
         if ($email === '') {
             return ApiResponse::err('Il campo email è obbligatorio.', 'VALIDATION_ERROR', 422);
@@ -177,10 +174,8 @@ class ClaimsController extends V2Controller
         }
 
         $agencyName = $s($agency->nome_agenzia);
-        $destMail = LegacyText::normalizeEmail($s($agency->denuncia_mail) !== '' ? $agency->denuncia_mail : $agency->quick_email);
-        if ($agencyId === 17) {
-            $destMail = 'g.deluca@catinoassicurazioni.it'; // hardcoded legacy (critics.md)
-        }
+        $fallbackMail = $s($agency->denuncia_mail) !== '' ? $agency->denuncia_mail : $agency->quick_email;
+        $destMail = $this->agencyMail($agencyId, 'preventivo', $fallbackMail);
 
         $nomecompleto = trim("$cognome $nome");
         $zipPath = $this->buildZip($request, 'preventivi', $agencyId.'-'.$nomecompleto, [
@@ -235,7 +230,7 @@ class ClaimsController extends V2Controller
         $cognome = trim($s($payload['cognome'] ?? ''));
         $email = LegacyText::normalizeEmail($payload['email'] ?? '');
         $descrizione = $s($payload['descrizione'] ?? '');
-        $privacy = $s($payload['privacy'] ?? '');
+        $privacy = LegacyRowSanitizer::normalizeBool($payload['privacy'] ?? null);
 
         if ($email === '') {
             return ApiResponse::err('Il campo email è obbligatorio.', 'VALIDATION_ERROR', 422);
@@ -247,7 +242,7 @@ class ClaimsController extends V2Controller
         }
 
         $agencyName = $s($agency->nome_agenzia);
-        $destMail = LegacyText::normalizeEmail($agency->quick_email);
+        $destMail = $this->agencyMail($agencyId, 'documento', $agency->quick_email);
 
         $nomecompleto = trim("$cognome $nome");
         $zipPath = $this->buildZip($request, 'documenti', $agencyId.'-'.$nomecompleto, [
@@ -283,6 +278,18 @@ class ClaimsController extends V2Controller
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────
+
+    /**
+     * Email destinataria per un'agenzia e un tipo ('denuncia'|'preventivo'):
+     * usa l'override di config se presente, altrimenti il valore dal DB.
+     * Sostituisce gli `if ($agencyId === 17)` hardcoded del legacy (critics.md).
+     */
+    private function agencyMail(int $agencyId, string $kind, mixed $fallback): string
+    {
+        $override = config("hybrid.agency_mail_overrides.$agencyId.$kind");
+
+        return LegacyText::normalizeEmail($override ?? $fallback);
+    }
 
     /** @return array<string, mixed>|null */
     private function dataPayload(Request $request): ?array

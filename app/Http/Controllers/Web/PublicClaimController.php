@@ -10,6 +10,7 @@ use App\Models\AgenziaNew;
 use App\Models\Documento;
 use App\Models\Preventivo;
 use App\Models\Sinistro;
+use App\Support\LegacyRowSanitizer;
 use App\Support\LegacyText;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -64,8 +65,10 @@ class PublicClaimController extends Controller
         $nome = $request->input("cognome_denuncia_$suffix", '').' '.$request->input("primo_nome_denuncia_$suffix", '');
         $email = (string) $request->input("email_denuncia_$suffix", '');
         $descrizione = (string) $request->input("descrizione_denuncia_$suffix", '');
-        $privacy = (string) $request->input("checkbox_privacy_$suffix", '');
-        $dataDenuncia = date('d/m/Y');
+        $privacy = LegacyRowSanitizer::normalizeBool($request->input("checkbox_privacy_$suffix"));
+        $now = now();
+        $dataDenuncia = $now->format('Y-m-d H:i:s');   // storage canonico
+        $dataDisplay = $now->format('d/m/Y');          // presentazione (corpo email)
 
         $sinistro = Sinistro::create([
             'id_agenzia' => $agency->id,
@@ -91,7 +94,7 @@ class PublicClaimController extends Controller
         <p><strong>Denunciante</strong>: '.htmlspecialchars($nome).'</p>
         <p><strong>e-mail Denunciante</strong>: <a href="mailto:'.htmlspecialchars($email).'">'.htmlspecialchars($email).'</a></p>
         <p><strong>Tipo di Sinistro</strong>: '.$suffix.'</p>
-        <p><strong>Data Denuncia</strong>: '.$dataDenuncia.'</p>
+        <p><strong>Data Denuncia</strong>: '.$dataDisplay.'</p>
         <p><strong>Descrizione del Sinistro</strong>: </p>
         <p>'.nl2br(htmlspecialchars($descrizione)).'</p>
         <p><strong>In allegato, la documentazione presentata dal denunciante.</strong></p>';
@@ -121,8 +124,10 @@ class PublicClaimController extends Controller
         $nome = $request->input('cognome_preventivo', '').' '.$request->input('primo_nome_preventivo', '');
         $email = (string) $request->input('email_preventivo', '');
         $descrizione = (string) $request->input('descrizione_preventivo', '');
-        $privacy = (string) $request->input('checkbox_privacy_preventivo', '');
-        $dataDenuncia = date('d/m/Y');
+        $privacy = LegacyRowSanitizer::normalizeBool($request->input('checkbox_privacy_preventivo'));
+        $now = now();
+        $dataDenuncia = $now->format('Y-m-d H:i:s');   // storage canonico
+        $dataDisplay = $now->format('d/m/Y');          // presentazione (corpo email)
 
         $preventivo = Preventivo::create([
             'id_agenzia' => $agency->id,
@@ -142,7 +147,7 @@ class PublicClaimController extends Controller
         <h2><strong>NUOVA RICHIESTA DI PREVENTIVO</strong></h2>
         <p><strong>Richiedente</strong>: '.htmlspecialchars($nome).'</p>
         <p><strong>e-mail Richiedente</strong>: <a href="mailto:'.htmlspecialchars($email).'">'.htmlspecialchars($email).'</a></p>
-        <p><strong>Data Richiesta</strong>: '.$dataDenuncia.'</p>
+        <p><strong>Data Richiesta</strong>: '.$dataDisplay.'</p>
         <p><strong>Descrizione</strong>: </p>
         <p>'.nl2br(htmlspecialchars($descrizione)).'</p>
         <p><strong>In allegato, la documentazione presentata dal richiedente.</strong></p>';
@@ -172,8 +177,10 @@ class PublicClaimController extends Controller
         $nome = $request->input('cognome_documenti', '').' '.$request->input('primo_nome_documenti', '');
         $email = (string) $request->input('email_documenti', '');
         $descrizione = (string) $request->input('descrizione_documenti', '');
-        $privacy = (string) $request->input('checkbox_privacy_documenti', '');
-        $dataDenuncia = date('d/m/Y');
+        $privacy = LegacyRowSanitizer::normalizeBool($request->input('checkbox_privacy_documenti'));
+        $now = now();
+        $dataDenuncia = $now->format('Y-m-d H:i:s');   // storage canonico
+        $dataDisplay = $now->format('d/m/Y');          // presentazione (corpo email)
 
         $documento = Documento::create([
             'id_agenzia' => $agency->id,
@@ -193,7 +200,7 @@ class PublicClaimController extends Controller
         <h2><strong>NUOVO DOCUMENTO CARICATO</strong></h2>
         <p><strong>Mittente</strong>: '.htmlspecialchars($nome).'</p>
         <p><strong>e-mail Mittente</strong>: <a href="mailto:'.htmlspecialchars($email).'">'.htmlspecialchars($email).'</a></p>
-        <p><strong>Data Richiesta</strong>: '.$dataDenuncia.'</p>
+        <p><strong>Data Richiesta</strong>: '.$dataDisplay.'</p>
         <p><strong>Descrizione</strong>: </p>
         <p>'.nl2br(htmlspecialchars($descrizione)).'</p>
         <p><strong>In allegato, la documentazione presentata dal mittente.</strong></p>';

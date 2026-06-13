@@ -135,9 +135,42 @@ class NotificationsTest extends V2TestCase
             ->assertJsonPath('data.letta', false);
     }
 
+    public function test_single_other_agency_is_404(): void
+    {
+        $agency = $this->makeAgency();
+        $other = $this->makeAgency(['token' => 'other']);
+        $cliente = $this->makeCliente($agency);
+
+        // Notifica di un'altra agenzia: anche col proprio username tra i destinatari
+        // non deve essere leggibile (IDOR). 404 per non rivelarne l'esistenza.
+        $altrui = Notifica::create([
+            'titolo' => 'Segreta', 'contenuto' => 'x', 'destinatari' => 'mario.rossi,',
+            'agenziaid' => $other->id,
+        ]);
+
+        $this->getJson('/res/api/v2/notifications/single.php?id='.$altrui->id, $this->authHeaders($cliente))
+            ->assertStatus(404)
+            ->assertJsonPath('code', 'NOT_FOUND');
+    }
+
+    public function test_single_non_recipient_is_404(): void
+    {
+        $agency = $this->makeAgency();
+        $cliente = $this->makeCliente($agency);
+
+        // Stessa agenzia ma l'utente non è tra i destinatari → 404
+        $n = Notifica::create([
+            'titolo' => 'Non per lui', 'contenuto' => 'x', 'destinatari' => 'qualcunaltro,',
+            'agenziaid' => $agency->id,
+        ]);
+
+        $this->getJson('/res/api/v2/notifications/single.php?id='.$n->id, $this->authHeaders($cliente))
+            ->assertStatus(404);
+    }
+
     // ─── POST notifications/read.php ─────────────────────────────────────
 
-    public function test_read_marks_notification_with_trailing_comma(): void
+    public function test_read_marks_notification_clean_csv(): void
     {
         $agency = $this->makeAgency();
         $cliente = $this->makeCliente($agency);
@@ -150,8 +183,29 @@ class NotificationsTest extends V2TestCase
             ->assertOk()
             ->assertExactJson(['success' => true, 'data' => ['id' => $n->id, 'letta' => true]]);
 
-        // Virgola finale preservata come il legacy
-        $this->assertSame('qualcuno,mario.rossi,', $n->fresh()->letta_da);
+        // CSV pulito: nessuna virgola finale (la voce vuota legacy viene scartata)
+        $this->assertSame('qualcuno,mario.rossi', $n->fresh()->letta_da);
+    }
+
+    public function test_recipient_match_is_exact_not_substring(): void
+    {
+        $agency = $this->makeAgency();
+        $cliente = $this->makeCliente($agency);   // username: mario.rossi
+
+        // 'mario.rossi' è SOTTOSTRINGA di 'mario.rossi2': non deve renderlo destinatario
+        $n = Notifica::create([
+            'titolo' => 'Per un altro', 'contenuto' => 'x',
+            'destinatari' => 'mario.rossi2,supermario,', 'agenziaid' => $agency->id,
+        ]);
+
+        // index: non compare
+        $this->getJson('/res/api/v2/notifications/index.php', $this->authHeaders($cliente))
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        // single: 404
+        $this->getJson('/res/api/v2/notifications/single.php?id='.$n->id, $this->authHeaders($cliente))
+            ->assertStatus(404);
     }
 
     public function test_read_is_idempotent(): void
@@ -176,5 +230,24 @@ class NotificationsTest extends V2TestCase
 
         $this->postJson('/res/api/v2/notifications/read.php', ['id' => 12345], $this->authHeaders($cliente))
             ->assertStatus(404);
+    }
+
+    public function test_read_other_agency_is_404_and_does_not_mutate(): void
+    {
+        $agency = $this->makeAgency();
+        $other = $this->makeAgency(['token' => 'other']);
+        $cliente = $this->makeCliente($agency);
+
+        // Notifica di un'altra agenzia: l'utente non deve poterla marcare letta
+        // (IDOR in scrittura). 404 e letta_da intatto.
+        $altrui = Notifica::create([
+            'titolo' => 'Segreta', 'contenuto' => 'x', 'destinatari' => 'mario.rossi,',
+            'letta_da' => 'pippo,', 'agenziaid' => $other->id,
+        ]);
+
+        $this->postJson('/res/api/v2/notifications/read.php', ['id' => $altrui->id], $this->authHeaders($cliente))
+            ->assertStatus(404);
+
+        $this->assertSame('pippo,', $altrui->fresh()->letta_da);
     }
 }

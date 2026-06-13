@@ -165,13 +165,14 @@ class CronCommandsTest extends V2TestCase
             && str_contains($r['contents']['en'], 'scadrà tra 15 giorni'));
     }
 
-    public function test_notifiche_skips_wrong_day(): void
+    public function test_notifiche_skips_beyond_window(): void
     {
         $this->fakeAssiEasyDetail();
         $agency = $this->makeAgency(['assiurl' => 't.assieasy.com', 'assisecret' => 's']);
         $cliente = $this->makeCliente($agency);
 
-        $dataEffetto = (new \DateTimeImmutable('today'))->modify('+10 days')->format('Y-m-d');
+        // +20 giorni: oltre la finestra di 15 → niente push
+        $dataEffetto = (new \DateTimeImmutable('today'))->modify('+20 days')->format('Y-m-d');
         $this->scadenzeFile([
             'cliente_id' => (int) $cliente->id, 'id_polizza' => '111',
             'data_effetto_titolo' => $dataEffetto,
@@ -184,6 +185,78 @@ class CronCommandsTest extends V2TestCase
 
         $this->assertSame(0, Notifica::count());
         Http::assertNotSent(fn ($r) => str_contains($r->url(), 'onesignal'));
+    }
+
+    public function test_notifiche_pushes_within_window_recovering_missed_day(): void
+    {
+        $this->fakeAssiEasyDetail();
+        $agency = $this->makeAgency(['assiurl' => 't.assieasy.com', 'assisecret' => 's']);
+        $cliente = $this->makeCliente($agency);
+
+        // +10 giorni: dentro la finestra (il giorno 15 era stato saltato) → push,
+        // col testo che riflette i giorni REALI mancanti
+        $dataEffetto = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))
+            ->modify('+10 days')->format('Y-m-d');
+        $this->scadenzeFile([
+            'cliente_id' => (int) $cliente->id, 'id_polizza' => '111',
+            'data_effetto_titolo' => $dataEffetto,
+            'os_app_id' => 'os-app', 'os_api_key' => 'os-key', 'playerid' => 'player-1',
+        ]);
+
+        $this->artisan('hybrid:scadenze-notifiche')
+            ->expectsOutputToContain('Push inviate: 1')
+            ->assertSuccessful();
+
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'onesignal')
+            && str_contains($r['contents']['en'], 'scadrà tra 10 giorni'));
+        $this->assertSame(1, \App\Models\ScadenzaNotificata::count());
+    }
+
+    public function test_notifiche_dedup_skips_already_notified(): void
+    {
+        $this->fakeAssiEasyDetail();
+        $agency = $this->makeAgency(['assiurl' => 't.assieasy.com', 'assisecret' => 's']);
+        $cliente = $this->makeCliente($agency);
+
+        $dataEffetto = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))
+            ->modify('+15 days')->format('Y-m-d');
+        $record = [
+            'cliente_id' => (int) $cliente->id, 'id_polizza' => '111',
+            'data_effetto_titolo' => $dataEffetto,
+            'os_app_id' => 'os-app', 'os_api_key' => 'os-key', 'playerid' => 'player-1',
+        ];
+
+        // 1° run → push + dedup row
+        $this->scadenzeFile($record);
+        $this->artisan('hybrid:scadenze-notifiche')->expectsOutputToContain('Push inviate: 1')->assertSuccessful();
+
+        // 2° run (giorno dopo, stessa scadenza ancora nel file) → niente doppione
+        $this->scadenzeFile($record);
+        $this->artisan('hybrid:scadenze-notifiche')->expectsOutputToContain('Push inviate: 0')->assertSuccessful();
+
+        $this->assertSame(1, Notifica::count());
+        $this->assertSame(1, \App\Models\ScadenzaNotificata::count());
+    }
+
+    public function test_notifiche_skips_already_expired(): void
+    {
+        $this->fakeAssiEasyDetail();
+        $agency = $this->makeAgency(['assiurl' => 't.assieasy.com', 'assisecret' => 's']);
+        $cliente = $this->makeCliente($agency);
+
+        // -1 giorno: già scaduta → niente push (days < 0)
+        $dataEffetto = (new \DateTimeImmutable('today'))->modify('-1 days')->format('Y-m-d');
+        $this->scadenzeFile([
+            'cliente_id' => (int) $cliente->id, 'id_polizza' => '111',
+            'data_effetto_titolo' => $dataEffetto,
+            'os_app_id' => 'a', 'os_api_key' => 'k', 'playerid' => 'p',
+        ]);
+
+        $this->artisan('hybrid:scadenze-notifiche')
+            ->expectsOutputToContain('Push inviate: 0')
+            ->assertSuccessful();
+
+        $this->assertSame(0, Notifica::count());
     }
 
     public function test_notifiche_respects_agency_override(): void

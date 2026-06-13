@@ -21,6 +21,22 @@ use Illuminate\Http\Request;
  */
 class NotificationController extends V2Controller
 {
+    /**
+     * Una notifica privata è accessibile a un utente solo se appartiene alla
+     * sua agenzia E lo username è tra i destinatari. Stessa regola di index():
+     * single()/read() la riusano per evitare IDOR (lettura/scrittura di
+     * notifiche altrui indovinando l'id). Vedi critics.md.
+     */
+    private function canAccess(Notifica $n, string $username, int $agencyId): bool
+    {
+        if ((int) $n->agenziaid !== $agencyId) {
+            return false;
+        }
+        $destinatari = array_map('strtolower', $n->destinatariList());
+
+        return in_array($username, $destinatari, true);
+    }
+
     /** Output di una notifica privata nel formato documentato. */
     private function payload(Notifica $n, string $username): array
     {
@@ -56,8 +72,7 @@ class NotificationController extends V2Controller
 
         $result = [];
         foreach ($rows as $n) {
-            $destinatari = array_map('strtolower', $n->destinatariList());
-            if (! in_array($username, $destinatari, true)) {
+            if (! $this->canAccess($n, $username, $agencyId)) {
                 continue;
             }
             $result[] = $this->payload($n, $username);
@@ -98,6 +113,7 @@ class NotificationController extends V2Controller
     {
         $claims = $this->claims($request);
         $username = strtolower(trim(ApiResponse::s($claims['username'] ?? '')));
+        $agencyId = (int) ($claims['agency_id'] ?? 0);
 
         $notifId = (int) $request->query('id', '0');
         if ($notifId <= 0) {
@@ -105,7 +121,7 @@ class NotificationController extends V2Controller
         }
 
         $n = Notifica::find($notifId);
-        if ($n === null) {
+        if ($n === null || ! $this->canAccess($n, $username, $agencyId)) {
             return ApiResponse::err('Notifica non trovata.', 'NOT_FOUND', 404);
         }
 
@@ -118,6 +134,7 @@ class NotificationController extends V2Controller
     {
         $claims = $this->claims($request);
         $username = strtolower(trim(ApiResponse::s($claims['username'] ?? '')));
+        $agencyId = (int) ($claims['agency_id'] ?? 0);
 
         $b = $this->jsonBody($request);
         $notifId = (int) ApiResponse::s($b['id'] ?? '0');
@@ -127,15 +144,16 @@ class NotificationController extends V2Controller
         }
 
         $n = Notifica::find($notifId);
-        if ($n === null) {
+        if ($n === null || ! $this->canAccess($n, $username, $agencyId)) {
             return ApiResponse::err('Notifica non trovata.', 'NOT_FOUND', 404);
         }
 
         $readers = $n->lettaDaList();
         if (! in_array($username, $readers, true)) {
             $readers[] = $username;
-            // Virgola finale come il legacy
-            $n->letta_da = implode(',', $readers).',';
+            // CSV pulito (niente virgola finale): coerente col pannello agenzie.
+            // Le letture filtrano comunque trim/vuoti via Notifica::csvToList().
+            $n->letta_da = implode(',', $readers);
             $n->save();
         }
 

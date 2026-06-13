@@ -71,8 +71,11 @@ class PublicClaimsTest extends V2TestCase
         $sinistro = Sinistro::latest('id')->first();
         $this->assertSame('Rossi Mario', $sinistro->nome_denuncia);
         $this->assertSame('auto', $sinistro->tipo_sinistro);
-        $this->assertSame('on', $sinistro->privacy_denuncia);
-        $this->assertSame(date('d/m/Y'), $sinistro->data_denuncia);
+        // consenso privacy canonicalizzato 'on' → '1' (non più 'on')
+        $this->assertSame('1', $sinistro->privacy_denuncia);
+        // data_denuncia salvata nel canonico Y-m-d H:i:s (non più d/m/Y)
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $sinistro->data_denuncia);
+        $this->assertStringStartsWith(date('Y-m-d'), $sinistro->data_denuncia);
 
         // ZIP con entry numerate in stile legacy
         $zip = new ZipArchive;

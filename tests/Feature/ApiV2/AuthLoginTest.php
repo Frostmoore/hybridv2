@@ -58,7 +58,7 @@ class AuthLoginTest extends V2TestCase
     public function test_successful_login_returns_token_and_user(): void
     {
         $agency = $this->makeAgency();
-        $cliente = $this->makeCliente($agency, ['firstlogin' => '2025-01-01 09:00:00', 'lastlogin' => '2025-06-01 09:00:00']);
+        $cliente = $this->makeCliente($agency, ['firstlogin' => '2025-01-01 09:00:00', 'lastlogin' => '2025-06-01 09:00:00', 'piva' => '12345678901']);
 
         $response = $this->postJson(self::URL, [
             'agency_id' => (string) $agency->id,
@@ -77,11 +77,13 @@ class AuthLoginTest extends V2TestCase
 
         // Oggetto user: chiavi nell'ordine legacy, valori stringa
         $this->assertSame([
-            'id', 'username', 'email', 'nome', 'cognome', 'cf', 'datadinascita',
+            'id', 'username', 'email', 'nome', 'cognome', 'cf', 'piva', 'datadinascita',
             'agenziaid', 'playerid', 'privacy1', 'privacy2', 'privacy3', 'privacy4',
             'active', 'firstlogin', 'lastlogin', 'codiceagenzia',
         ], array_keys($data['user']));
         $this->assertSame((string) $cliente->id, $data['user']['id']);
+        // piva ora esposta (allineamento API/DB/model Flutter)
+        $this->assertSame('12345678901', $data['user']['piva']);
         $this->assertSame('1|2026-01-01 10:00:00', $data['user']['privacy1']);
         $this->assertSame('2025-01-01 09:00:00', $data['user']['firstlogin']);
         // lastlogin nella risposta è il NUOVO valore (adesso), non quello vecchio
