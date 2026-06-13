@@ -1,0 +1,1073 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   admin.css — tema del pannello amministrativo (fase 10.5)
+   Solo presentazione. Caricato sopra Bootstrap 5 (usa la sua griglia/utility).
+─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+    --adm-bg: #f4f6fb;
+    --adm-surface: #ffffff;
+    --adm-ink: #1a1f36;
+    --adm-muted: #6b7280;
+    --adm-border: #e6e9f0;
+    --adm-primary: #3b5bdb;
+    --adm-primary-d: #2f49b0;
+    --adm-success: #2f9e6f;
+    --adm-danger: #d8455f;
+    --adm-radius: 14px;
+    --adm-shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 6px 20px rgba(16, 24, 40, .06);
+}
+
+body.adm {
+    margin: 0;
+    background: var(--adm-bg);
+    color: var(--adm-ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Navbar ─────────────────────────────────────────────────────────────── */
+.adm-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--adm-ink);
+    color: #fff;
+}
+
+.adm-nav__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px;
+    height: 62px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.adm-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    letter-spacing: .2px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 1.05rem;
+}
+
+.adm-brand__mark {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--adm-primary), #6f7ff0);
+    display: grid;
+    place-items: center;
+    font-size: .9rem;
+    font-weight: 800;
+}
+
+.adm-nav__links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 18px;
+}
+
+.adm-nav__links a {
+    color: rgba(255, 255, 255, .72);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 9px;
+    font-size: .92rem;
+    font-weight: 500;
+    transition: background .15s, color .15s;
+}
+
+.adm-nav__links a:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, .08);
+}
+
+.adm-nav__links a.is-active {
+    color: #fff;
+    background: rgba(255, 255, 255, .14);
+}
+
+.adm-nav__spacer {
+    flex: 1;
+}
+
+.adm-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, .85);
+    font-size: .9rem;
+}
+
+.adm-user__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .14);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.adm-logout {
+    color: rgba(255, 255, 255, .8);
+    border: 1px solid rgba(255, 255, 255, .22);
+    border-radius: 9px;
+    padding: 7px 12px;
+    font-size: .88rem;
+    text-decoration: none;
+    transition: background .15s, color .15s;
+}
+
+.adm-logout:hover {
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+}
+
+.adm-burger {
+    display: none;
+    background: none;
+    border: 0;
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    margin-left: auto;
+    padding: 4px 8px;
+}
+
+/* ── Main ───────────────────────────────────────────────────────────────── */
+.adm-main {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 30px 20px 70px;
+}
+
+.adm-pagehead {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.adm-pagehead h1 {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+.adm-pagehead p {
+    margin: 4px 0 0;
+    color: var(--adm-muted);
+    font-size: .95rem;
+}
+
+/* ── Bottoni ────────────────────────────────────────────────────────────── */
+.adm-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 0;
+    border-radius: 11px;
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: .92rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, box-shadow .15s, transform .05s;
+}
+
+.adm-btn:active {
+    transform: translateY(1px);
+}
+
+.adm-btn--primary {
+    background: var(--adm-primary);
+    color: #fff;
+}
+
+.adm-btn--primary:hover {
+    background: var(--adm-primary-d);
+    color: #fff;
+}
+
+.adm-btn--ghost {
+    background: var(--adm-surface);
+    color: var(--adm-ink);
+    border: 1px solid var(--adm-border);
+}
+
+.adm-btn--ghost:hover {
+    border-color: #c9cfdd;
+    color: var(--adm-ink);
+}
+
+/* ── Ricerca ────────────────────────────────────────────────────────────── */
+.adm-search {
+    position: relative;
+    margin-bottom: 22px;
+    max-width: 360px;
+}
+
+.adm-search input {
+    width: 100%;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-surface);
+    border-radius: 11px;
+    padding: 11px 14px 11px 40px;
+    font-size: .95rem;
+    color: var(--adm-ink);
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.adm-search input:focus {
+    border-color: var(--adm-primary);
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, .15);
+}
+
+.adm-search i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--adm-muted);
+}
+
+/* ── Griglia agenzie ────────────────────────────────────────────────────── */
+.adm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 18px;
+}
+
+.adm-card {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius);
+    box-shadow: var(--adm-shadow);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    transition: transform .12s, box-shadow .12s, border-color .12s;
+}
+
+.adm-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(16, 24, 40, .1);
+    border-color: #d7dcea;
+}
+
+.adm-card__top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.adm-card__logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #eef1f8;
+    flex-shrink: 0;
+}
+
+.adm-card__logo--ph {
+    display: grid;
+    place-items: center;
+    color: #9aa3b8;
+    font-size: 1.5rem;
+}
+
+.adm-card__name {
+    font-weight: 700;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    margin: 0;
+    word-break: break-word;
+}
+
+.adm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 999px;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+}
+
+.adm-badge--on {
+    background: rgba(47, 158, 111, .12);
+    color: var(--adm-success);
+}
+
+.adm-badge--off {
+    background: rgba(216, 69, 95, .1);
+    color: var(--adm-danger);
+}
+
+.adm-card__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 4px 0 16px;
+    font-size: .82rem;
+    color: var(--adm-muted);
+}
+
+.adm-card__meta .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: center;
+}
+
+.adm-chip {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    background: #f1f3f9;
+    border: 1px solid var(--adm-border);
+    border-radius: 7px;
+    padding: 2px 8px;
+    font-size: .78rem;
+    color: #46506b;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.adm-card__actions {
+    margin-top: auto;
+}
+
+.adm-card__actions .adm-btn {
+    width: 100%;
+    justify-content: center;
+}
+
+/* card "aggiungi" */
+.adm-card--add {
+    border-style: dashed;
+    border-width: 2px;
+    border-color: #cfd6e6;
+    background: transparent;
+    box-shadow: none;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--adm-muted);
+    min-height: 180px;
+    cursor: pointer;
+}
+
+.adm-card--add:hover {
+    border-color: var(--adm-primary);
+    color: var(--adm-primary);
+    transform: translateY(-3px);
+    box-shadow: none;
+}
+
+.adm-card--add i {
+    font-size: 1.9rem;
+    margin-bottom: 8px;
+    display: block;
+}
+
+/* ── Flash ──────────────────────────────────────────────────────────────── */
+.adm-flash {
+    border-radius: 12px;
+    padding: 13px 16px;
+    margin-bottom: 20px;
+    font-size: .93rem;
+    border: 1px solid transparent;
+}
+
+.adm-flash--ok {
+    background: rgba(47, 158, 111, .1);
+    border-color: rgba(47, 158, 111, .25);
+    color: #1f6b4c;
+}
+
+.adm-flash--err {
+    background: rgba(216, 69, 95, .08);
+    border-color: rgba(216, 69, 95, .25);
+    color: #a32f44;
+}
+
+.adm-empty {
+    text-align: center;
+    color: var(--adm-muted);
+    padding: 48px 16px;
+}
+
+/* ── Form a tab (modifica/crea agenzia) ─────────────────────────────────── */
+.adm-infobar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+}
+
+.adm-infobar .k {
+    display: block;
+    font-size: .7rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--adm-muted);
+    margin-bottom: 3px;
+}
+
+.adm-form {
+    display: flex;
+    align-items: flex-start;
+    gap: 24px;
+}
+
+.adm-tabs {
+    flex: 0 0 220px;
+    position: sticky;
+    top: 84px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.adm-tab {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    text-align: left;
+    border: 0;
+    background: transparent;
+    color: var(--adm-muted);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .12s, color .12s;
+}
+
+.adm-tab i {
+    width: 16px;
+    text-align: center;
+    opacity: .8;
+}
+
+.adm-tab:hover {
+    background: #eef1f8;
+    color: var(--adm-ink);
+}
+
+.adm-tab.is-active {
+    background: var(--adm-surface);
+    color: var(--adm-primary);
+    box-shadow: var(--adm-shadow);
+}
+
+.adm-tabbody {
+    flex: 1;
+    min-width: 0;
+}
+
+.adm-panel {
+    display: none;
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius);
+    box-shadow: var(--adm-shadow);
+    padding: 24px;
+}
+
+.adm-panel.is-active {
+    display: block;
+}
+
+.adm-panel__title {
+    margin: 0 0 4px;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.adm-panel__hint {
+    margin: 0 0 18px;
+    color: var(--adm-muted);
+    font-size: .85rem;
+}
+
+.adm-fieldgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.adm-field--wide {
+    grid-column: 1 / -1;
+}
+
+.adm-field label {
+    display: block;
+    font-size: .82rem;
+    font-weight: 600;
+    color: var(--adm-ink);
+    margin-bottom: 5px;
+}
+
+.adm-field label code {
+    font-weight: 500;
+    font-size: .72rem;
+    color: var(--adm-muted);
+    background: none;
+    padding: 0;
+}
+
+.adm-input,
+.adm-textarea {
+    width: 100%;
+    border: 1px solid var(--adm-border);
+    background: #fff;
+    border-radius: 9px;
+    padding: 9px 12px;
+    font-size: .9rem;
+    color: var(--adm-ink);
+    outline: none;
+    transition: border-color .12s, box-shadow .12s;
+    font-family: inherit;
+}
+
+.adm-textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.adm-input:focus,
+.adm-textarea:focus {
+    border-color: var(--adm-primary);
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, .15);
+}
+
+/* Immagini */
+.adm-imgfield {
+    border: 1px solid var(--adm-border);
+    border-radius: 11px;
+    padding: 14px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+.adm-imgfield__thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 9px;
+    object-fit: cover;
+    background: #eef1f8;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    color: #9aa3b8;
+}
+
+.adm-imgfield__body {
+    flex: 1;
+    min-width: 0;
+}
+
+.adm-req {
+    color: var(--adm-danger);
+    font-weight: 700;
+}
+
+.adm-input[type="file"] {
+    padding: 7px 10px;
+    font-size: .82rem;
+}
+
+/* Barra azioni */
+.adm-formbar {
+    position: sticky;
+    bottom: 0;
+    margin-top: 18px;
+    padding: 14px 0 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.adm-formbar .adm-btn--primary {
+    box-shadow: 0 6px 16px rgba(59, 91, 219, .25);
+}
+
+@media (max-width: 820px) {
+    .adm-form {
+        flex-direction: column;
+    }
+
+    .adm-tabs {
+        flex: none;
+        position: static;
+        flex-direction: row;
+        overflow-x: auto;
+        width: 100%;
+        padding-bottom: 6px;
+        gap: 6px;
+    }
+
+    .adm-tab {
+        flex: 0 0 auto;
+    }
+}
+
+/* ── Blocco/card generico ───────────────────────────────────────────────── */
+.adm-block {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius);
+    box-shadow: var(--adm-shadow);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.adm-block--narrow {
+    max-width: 720px;
+}
+
+/* ── Stepper wizard ─────────────────────────────────────────────────────── */
+.adm-steps {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+}
+
+.adm-step {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--adm-muted);
+    font-weight: 600;
+    font-size: .9rem;
+}
+
+.adm-step__num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e7ebf5;
+    color: var(--adm-muted);
+    display: grid;
+    place-items: center;
+    font-size: .85rem;
+}
+
+.adm-step.is-active {
+    color: var(--adm-ink);
+}
+
+.adm-step.is-active .adm-step__num {
+    background: var(--adm-primary);
+    color: #fff;
+}
+
+.adm-step.is-done .adm-step__num {
+    background: var(--adm-success);
+    color: #fff;
+}
+
+.adm-step__bar {
+    flex: 1;
+    height: 2px;
+    background: var(--adm-border);
+    max-width: 60px;
+}
+
+/* ── Radio "card" ───────────────────────────────────────────────────────── */
+.adm-radios {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.adm-radio {
+    border: 1px solid var(--adm-border);
+    border-radius: 11px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: .88rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: border-color .12s, background .12s;
+}
+
+.adm-radio:hover {
+    border-color: #c9cfdd;
+}
+
+.adm-radio input {
+    accent-color: var(--adm-primary);
+}
+
+.adm-radio:has(input:checked) {
+    border-color: var(--adm-primary);
+    background: rgba(59, 91, 219, .06);
+}
+
+/* ── Tabella moderna ────────────────────────────────────────────────────── */
+.adm-tablewrap {
+    overflow-x: auto;
+    border: 1px solid var(--adm-border);
+    border-radius: 12px;
+}
+
+.adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .88rem;
+}
+
+.adm-table th {
+    text-align: left;
+    background: #f6f8fc;
+    color: var(--adm-muted);
+    font-weight: 600;
+    font-size: .76rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    padding: 11px 14px;
+    position: sticky;
+    top: 0;
+    border-bottom: 1px solid var(--adm-border);
+}
+
+.adm-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--adm-border);
+    vertical-align: middle;
+}
+
+.adm-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.adm-table tbody tr:nth-child(even) {
+    background: #fafbfe;
+}
+
+.adm-table .adm-input {
+    padding: 6px 9px;
+    font-size: .82rem;
+}
+
+/* ── Log / output ───────────────────────────────────────────────────────── */
+.adm-log {
+    background: #161a2b;
+    color: #cdd5ea;
+    border-radius: 10px;
+    padding: 14px 16px;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: .8rem;
+    line-height: 1.55;
+    max-height: 280px;
+    overflow: auto;
+    white-space: pre-wrap;
+}
+
+/* ── Barra "bare" (pagine standalone tipo import a password) ─────────────── */
+.adm-barebar {
+    background: var(--adm-ink);
+    color: #fff;
+}
+
+.adm-barebar__inner {
+    max-width: 980px;
+    margin: 0 auto;
+    height: 60px;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.adm-authwrap {
+    min-height: calc(100vh - 60px);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.adm-authcard {
+    width: 100%;
+    max-width: 380px;
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius);
+    box-shadow: var(--adm-shadow);
+    padding: 30px;
+}
+
+.adm-authcard h1 {
+    font-size: 1.3rem;
+    margin: 0 0 4px;
+    text-align: center;
+}
+
+.adm-authcard p.sub {
+    color: var(--adm-muted);
+    text-align: center;
+    font-size: .9rem;
+    margin: 0 0 20px;
+}
+
+/* ── Tiles (home pannello agenzie) ──────────────────────────────────────── */
+.adm-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 16px;
+}
+
+.adm-tile {
+    background: var(--adm-surface);
+    border: 1px solid var(--adm-border);
+    border-radius: var(--adm-radius);
+    box-shadow: var(--adm-shadow);
+    padding: 26px 20px;
+    text-decoration: none;
+    color: var(--adm-ink);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
+    transition: transform .12s, box-shadow .12s, border-color .12s;
+}
+
+.adm-tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(16, 24, 40, .1);
+    border-color: #d7dcea;
+    color: var(--adm-ink);
+}
+
+.adm-tile__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    background: rgba(59, 91, 219, .1);
+    color: var(--adm-primary);
+}
+
+.adm-tile--green .adm-tile__icon { background: rgba(47, 158, 111, .12); color: var(--adm-success); }
+.adm-tile--amber .adm-tile__icon { background: rgba(217, 142, 47, .14); color: #c07d1e; }
+.adm-tile--dark .adm-tile__icon { background: rgba(26, 31, 54, .08); color: var(--adm-ink); }
+
+.adm-tile__label {
+    font-weight: 600;
+    font-size: .98rem;
+}
+
+/* ── Sub-tab (header pagine notifiche) ──────────────────────────────────── */
+.adm-subtabs {
+    display: inline-flex;
+    background: #eef1f8;
+    border-radius: 11px;
+    padding: 4px;
+    gap: 4px;
+    margin-bottom: 22px;
+}
+
+.adm-subtabs a {
+    text-decoration: none;
+    color: var(--adm-muted);
+    font-weight: 600;
+    font-size: .88rem;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+.adm-subtabs a.is-active {
+    background: var(--adm-surface);
+    color: var(--adm-primary);
+    box-shadow: var(--adm-shadow);
+}
+
+/* ── Utility usate dal JS legacy (toggle visibilità) ────────────────────── */
+.a_hidden,
+.hide {
+    display: none;
+}
+
+/* ── Pagine pubbliche (form per-agenzia + account) ──────────────────────── */
+.pub-hero {
+    position: relative;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--adm-ink);
+}
+
+.pub-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(20, 25, 45, .25), rgba(20, 25, 45, .75));
+}
+
+.pub-hero__title {
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 1;
+    text-align: center;
+    color: #fff;
+    padding: 0 20px 22px;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+}
+
+.pub-wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 26px 18px 70px;
+}
+
+.pub-wrap--narrow {
+    max-width: 480px;
+}
+
+/* selettore tipo sinistro */
+.pub-selector {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.pub-selector button {
+    flex: 1;
+    min-width: 160px;
+    border: 1px solid var(--adm-border);
+    background: var(--adm-surface);
+    border-radius: 12px;
+    padding: 18px 16px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: var(--adm-shadow);
+    transition: border-color .12s, transform .05s, color .12s;
+}
+
+.pub-selector button:hover {
+    border-color: var(--adm-primary);
+    color: var(--adm-primary);
+    transform: translateY(-2px);
+}
+
+/* riga consenso privacy */
+.pub-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.pub-check input {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--adm-primary);
+    flex-shrink: 0;
+}
+
+.pub-privacy {
+    font-size: .86rem;
+    color: var(--adm-muted);
+    line-height: 1.5;
+}
+
+/* esito/icone account */
+.pub-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 2rem;
+    margin: 0 auto 16px;
+}
+
+.pub-icon--ok { background: rgba(47, 158, 111, .12); color: var(--adm-success); }
+.pub-icon--err { background: rgba(216, 69, 95, .1); color: var(--adm-danger); }
+.pub-icon--wait { background: rgba(59, 91, 219, .1); color: var(--adm-primary); }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+    .adm-burger {
+        display: block;
+    }
+
+    .adm-nav__links,
+    .adm-nav__inner .adm-user,
+    .adm-nav__inner .adm-logout {
+        display: none;
+    }
+
+    .adm-nav.is-open .adm-nav__links {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 2px;
+        position: absolute;
+        top: 62px;
+        left: 0;
+        right: 0;
+        background: var(--adm-ink);
+        padding: 10px 16px 16px;
+        margin: 0;
+        border-top: 1px solid rgba(255, 255, 255, .1);
+    }
+
+    .adm-nav.is-open .adm-user,
+    .adm-nav.is-open .adm-logout {
+        display: flex;
+    }
+
+    .adm-nav.is-open .adm-nav__inner {
+        flex-wrap: wrap;
+        height: auto;
+        padding-bottom: 14px;
+    }
+
+    .adm-nav.is-open .adm-user {
+        margin: 12px 16px 0;
+    }
+
+    .adm-nav.is-open .adm-logout {
+        margin: 10px 16px 0;
+        justify-content: center;
+    }
+}

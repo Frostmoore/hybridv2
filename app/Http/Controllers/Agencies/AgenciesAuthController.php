@@ -19,7 +19,7 @@ class AgenciesAuthController extends Controller
     public function showLogin(Request $request)
     {
         if (Auth::guard('operatore')->check()) {
-            return redirect('home.php');
+            return redirect('home');
         }
 
         return view('agencies.login', [
@@ -69,6 +69,6 @@ class AgenciesAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('login.php');
+        return redirect('login');
     }
 }

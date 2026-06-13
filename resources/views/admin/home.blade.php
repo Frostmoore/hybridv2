@@ -1,43 +1,98 @@
 @extends('layouts.admin')
 
-@section('title', 'Home Page')
+@section('title', 'Agenzie')
 
 @section('content')
-    <div class="page">
-        <h1>Agenzie</h1>
-    </div>
-    <div class="container-age">
-        <div class="row">
-            @foreach ($agenzie as $agenzia)
-                <div class="col-sm">
-                    <div class="agenzia-compressed">
-                        <div class="logo-compressed">
-                            <img src="{{ $agenzia->logo_agenzia === 'placeholder' || $agenzia->logo_agenzia === '' ? 'https://loremflickr.com/128/128' : asset('res/'.$agenzia->logo_agenzia) }}" width="128" height="128" />
-                        </div>
-                        <div class="info-compressed">
-                            <h2>{{ $agenzia->nome_agenzia }}</h2>
-                            <p>ID: <strong>{{ $agenzia->id }}</strong></p>
-                            <p>TOKEN: <strong>{{ $agenzia->token }}</strong></p>
-                        </div>
-                        <div class="info-compressed">
-                            <a href="{{ url('agenzia.php?id='.$agenzia->id) }}"><button type="button" class="btn btn-outline-danger">Modifica Dati</button></a>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-            <div class="col-sm">
-                <div class="agenzia-compressed">
-                    <div class="logo-compressed">
-                        <img src="{{ asset('res/plus.png') }}" />
-                    </div>
-                    <div class="info-compressed">
-                        <h2>Nuovo</h2>
-                    </div>
-                    <div class="info-compressed">
-                        <a href="{{ url('creagenzia.php') }}"><button type="button" class="btn btn-outline-success">Nuova Agenzia</button></a>
-                    </div>
-                </div>
-            </div>
+    <div class="adm-pagehead">
+        <div>
+            <h1>Agenzie</h1>
+            <p>{{ $agenzie->count() }} {{ $agenzie->count() === 1 ? 'agenzia configurata' : 'agenzie configurate' }}</p>
         </div>
+        <a href="{{ url('agenzia/nuova') }}" class="adm-btn adm-btn--primary">
+            <i class="fas fa-plus"></i> Nuova Agenzia
+        </a>
+    </div>
+
+    @if (session('status'))
+        <div class="adm-flash adm-flash--ok">{{ session('status') }}</div>
+    @endif
+
+    <div class="adm-search">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="admSearch" placeholder="Cerca per nome, ID o token…" autocomplete="off">
+    </div>
+
+    <div class="adm-grid" id="admGrid">
+        @foreach ($agenzie as $agenzia)
+            @php $attiva = (string) $agenzia->attiva === '1'; @endphp
+            <article class="adm-card" data-search="{{ Str::lower($agenzia->nome_agenzia . ' ' . $agenzia->id . ' ' . $agenzia->token) }}">
+                <div class="adm-card__top">
+                    @if ($agenzia->logo_agenzia && $agenzia->logo_agenzia !== 'placeholder')
+                        <img class="adm-card__logo" src="{{ url('res/' . $agenzia->logo_agenzia) }}" alt=""
+                             onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                        <div class="adm-card__logo adm-card__logo--ph d-none"><i class="fas fa-building"></i></div>
+                    @else
+                        <div class="adm-card__logo adm-card__logo--ph"><i class="fas fa-building"></i></div>
+                    @endif
+                    <div>
+                        <h2 class="adm-card__name">{{ $agenzia->nome_agenzia ?: '(senza nome)' }}</h2>
+                        <span class="adm-badge {{ $attiva ? 'adm-badge--on' : 'adm-badge--off' }}">
+                            <i class="fas {{ $attiva ? 'fa-circle-check' : 'fa-circle-pause' }}"></i>
+                            {{ $attiva ? 'Attiva' : 'Sospesa' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="adm-card__meta">
+                    <div class="row">
+                        <span>ID</span>
+                        <strong>{{ $agenzia->id }}</strong>
+                    </div>
+                    <div class="row">
+                        <span>Token</span>
+                        <span class="adm-chip" title="{{ $agenzia->token }}">{{ $agenzia->token ?: '—' }}</span>
+                    </div>
+                </div>
+
+                <div class="adm-card__actions">
+                    <a href="{{ url('agenzia/' . $agenzia->id) }}" class="adm-btn adm-btn--ghost">
+                        <i class="fas fa-pen"></i> Modifica
+                    </a>
+                </div>
+            </article>
+        @endforeach
+
+        <a href="{{ url('agenzia/nuova') }}" class="adm-card adm-card--add" id="admAddCard">
+            <i class="fas fa-plus"></i>
+            Nuova Agenzia
+        </a>
+    </div>
+
+    <div class="adm-empty" id="admNoResults" style="display:none;">
+        Nessuna agenzia corrisponde alla ricerca.
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const input = document.getElementById('admSearch');
+        const cards = Array.from(document.querySelectorAll('#admGrid .adm-card[data-search]'));
+        const addCard = document.getElementById('admAddCard');
+        const noResults = document.getElementById('admNoResults');
+
+        input.addEventListener('input', function () {
+            const q = this.value.trim().toLowerCase();
+            let visible = 0;
+            cards.forEach(card => {
+                const match = card.dataset.search.includes(q);
+                card.style.display = match ? '' : 'none';
+                if (match) visible++;
+            });
+            // La card "aggiungi" sparisce durante una ricerca attiva
+            addCard.style.display = q === '' ? '' : 'none';
+            noResults.style.display = (visible === 0 && q !== '') ? 'block' : 'none';
+        });
+    })();
+</script>
+@endpush

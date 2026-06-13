@@ -26,7 +26,7 @@ final class OperatoreSessionTimeout
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                return redirect('login.php?session_expired=1');
+                return redirect('login?session_expired=1');
             }
             $request->session()->put('operatore_last_activity', time());
         }

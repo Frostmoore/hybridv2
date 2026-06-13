@@ -47,44 +47,45 @@ class AgencyAdminController extends Controller
         return view('admin.home', ['agenzie' => AgenziaNew::orderBy('id')->get()]);
     }
 
-    // ─── GET agenzia.php?id ──────────────────────────────────────────────
+    // ─── GET /agenzia/{id} (edit) ────────────────────────────────────────
 
-    public function edit(Request $request)
+    public function edit(int $id)
     {
-        $agenzia = AgenziaNew::findOrFail((int) $request->query('id', 0));
+        $agenzia = AgenziaNew::findOrFail($id);
 
         return view('admin.agenzia_form', [
             'agenzia' => $agenzia,
-            'action' => 'res/updateagenzia.php',
+            'action' => 'agenzia/'.$agenzia->id,
             'titolo' => 'Modifica '.$agenzia->nome_agenzia,
         ]);
     }
 
-    // ─── POST res/updateagenzia.php ──────────────────────────────────────
+    // ─── POST /agenzia/{id} (update; alias res/updateagenzia.php) ─────────
 
-    public function update(Request $request)
+    public function update(Request $request, ?int $id = null)
     {
-        $agenzia = AgenziaNew::findOrFail((int) $request->input('id', 0));
+        // id dal route URL pulito, oppure dal body (alias legacy res/updateagenzia.php)
+        $agenzia = AgenziaNew::findOrFail($id ?? (int) $request->input('id', 0));
 
         $agenzia->fill($this->textFields($request));
         $this->saveImages($request, $agenzia);
         $agenzia->save();
 
-        return redirect('agenzia.php?id='.$agenzia->id)->with('status', 'Agenzia aggiornata con successo.');
+        return redirect('agenzia/'.$agenzia->id)->with('status', 'Agenzia aggiornata con successo.');
     }
 
-    // ─── GET creagenzia.php ──────────────────────────────────────────────
+    // ─── GET /agenzia/nuova (create) ─────────────────────────────────────
 
     public function create()
     {
         return view('admin.agenzia_form', [
             'agenzia' => new AgenziaNew,
-            'action' => 'res/nuovagenzia.php',
+            'action' => 'agenzia',
             'titolo' => 'Nuova Agenzia',
         ]);
     }
 
-    // ─── POST res/nuovagenzia.php ────────────────────────────────────────
+    // ─── POST /agenzia (store; alias res/nuovagenzia.php) ─────────────────
 
     public function store(Request $request)
     {
@@ -103,7 +104,7 @@ class AgencyAdminController extends Controller
         $this->saveImages($request, $agenzia);
         $agenzia->save();
 
-        return redirect('home.php')->with('status', 'Agenzia "'.$agenzia->nome_agenzia.'" creata con ID '.$agenzia->id.'.');
+        return redirect('home')->with('status', 'Agenzia "'.$agenzia->nome_agenzia.'" creata con ID '.$agenzia->id.'.');
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────

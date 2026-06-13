@@ -3,36 +3,32 @@
 @section('title', 'Eliminazione Definitiva Account')
 
 @section('content')
-    <div class="delac-body">
-        <div class="delac-container">
-            <div class="delac-head">
-                <h1>Eliminazione Definitiva Account</h1>
-            </div>
+    <div class="adm-authwrap">
+        <div class="adm-authcard">
+            <div class="pub-icon pub-icon--err"><i class="fas fa-triangle-exclamation"></i></div>
+            <h1>Eliminazione definitiva</h1>
             @if (session('esito'))
-                <div class="delac-intro">
-                    <h2>{{ session('esito.titolo') }}</h2>
-                    <p>{{ session('esito.testo') }}</p>
+                <div class="adm-flash adm-flash--ok" style="text-align:center;">
+                    <strong>{{ session('esito.titolo') }}</strong><br>
+                    {{ session('esito.testo') }}
                 </div>
             @else
-                <div class="delac-intro">
-                    <p>Per confermare la cancellazione <strong>definitiva</strong> del tuo account, inserisci email e password.</p>
-                    <p><strong style="color:#a80000!important;">Attenzione:</strong> l'operazione non è reversibile.</p>
-                </div>
+                <p class="sub">Per confermare la cancellazione <strong>definitiva</strong> del tuo account inserisci email e password. L'operazione non è reversibile.</p>
                 @if ($errors->any())
-                    <div class="alert alert-danger">{{ $errors->first() }}</div>
+                    <div class="adm-flash adm-flash--err">{{ $errors->first() }}</div>
                 @endif
-                <form method="post" action="{{ url('remove_account.php') }}" class="delac-form">
+                <form method="post" action="{{ url('remove_account.php') }}">
                     @csrf
                     <input type="hidden" name="token" value="{{ $token }}">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                    <div class="adm-field" style="margin-bottom:14px;">
+                        <label for="email">Email</label>
+                        <input type="email" class="adm-input" id="email" name="email" required>
                     </div>
-                    <div class="form-group mt-2">
-                        <label for="password">Password:</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="adm-field" style="margin-bottom:18px;">
+                        <label for="password">Password</label>
+                        <input type="password" class="adm-input" id="password" name="password" required>
                     </div>
-                    <button type="submit" class="btn btn-danger mt-3">Elimina definitivamente</button>
+                    <button type="submit" class="adm-btn adm-btn--primary" style="width:100%; justify-content:center; background:var(--adm-danger);">Elimina definitivamente</button>
                 </form>
             @endif
         </div>

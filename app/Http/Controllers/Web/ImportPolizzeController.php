@@ -42,7 +42,7 @@ class ImportPolizzeController extends Controller
         if ($request->query->has('logout')) {
             $request->session()->forget([self::SESSION_KEY]);
 
-            return redirect('import_polizze.php');
+            return redirect('import-polizze');
         }
 
         // Login a password
@@ -51,7 +51,7 @@ class ImportPolizzeController extends Controller
             if ($expected !== '' && hash_equals($expected, (string) $request->input('pw'))) {
                 $request->session()->put(self::SESSION_KEY, time());
 
-                return redirect('import_polizze.php');
+                return redirect('import-polizze');
             }
 
             return view('admin.import_polizze_login', ['error' => 'Password non corretta.']);

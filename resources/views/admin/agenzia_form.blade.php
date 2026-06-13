@@ -2,71 +2,138 @@
 
 @section('title', $titolo)
 
-@php use App\Http\Controllers\Web\AgencyAdminController; @endphp
+@php
+    use App\Http\Controllers\Web\AgencyAdminController;
+    use Illuminate\Support\Str;
+
+    // Campi che ospitano valori multipli / lunghi → textarea a tutta riga
+    $textareaFields = ['info_indirizzi_sedi', 'info_orari_sedi', 'numeri_utili_salute',
+        'numeri_utili_assistenza', 'numeri_utili_noleggio', 'notifica_testo', 'colori'];
+
+    // Icona per sezione (per indice; fallback generico)
+    $sectionIcons = ['fa-id-card', 'fa-share-nodes', 'fa-location-dot', 'fa-bullhorn',
+        'fa-phone-volume', 'fa-car-burst', 'fa-file-invoice-dollar', 'fa-folder-open',
+        'fa-bolt', 'fa-plug'];
+@endphp
 
 @section('content')
-    <div class="page">
-        <h1>{{ $titolo }}</h1>
+    <div class="adm-pagehead">
+        <div>
+            <h1>{{ $titolo }}</h1>
+            <p>{{ $agenzia->exists ? 'Modifica la configurazione white-label dell\'agenzia.' : 'Configura una nuova agenzia white-label.' }}</p>
+        </div>
+        <a href="{{ url('home') }}" class="adm-btn adm-btn--ghost"><i class="fas fa-arrow-left"></i> Torna alle agenzie</a>
     </div>
-    <div class="container" style="max-width: 1000px; margin-bottom: 60px;">
-        @if (session('status'))
-            <div class="alert alert-success">{{ session('status') }}</div>
-        @endif
-        @if ($errors->any())
-            <div class="alert alert-danger">{{ $errors->first() }}</div>
+
+    @if (session('status'))
+        <div class="adm-flash adm-flash--ok">{{ session('status') }}</div>
+    @endif
+    @if ($errors->any())
+        <div class="adm-flash adm-flash--err">{{ $errors->first() }}</div>
+    @endif
+
+    @if ($agenzia->exists)
+        <div class="adm-infobar">
+            <div><span class="k">ID</span><strong>{{ $agenzia->id }}</strong></div>
+            <div><span class="k">Token pubblico</span><span class="adm-chip">{{ $agenzia->token ?: '—' }}</span></div>
+            <div><span class="k">Token interno</span><span class="adm-chip">{{ $agenzia->token_interno ?: '—' }}</span></div>
+        </div>
+    @endif
+
+    <form action="{{ url($action) }}" method="post" enctype="multipart/form-data">
+        @csrf
+        @if ($agenzia->exists)
+            <input type="hidden" name="id" value="{{ $agenzia->id }}">
         @endif
 
-        <form action="{{ url($action) }}" method="post" enctype="multipart/form-data">
-            @csrf
-            @if ($agenzia->exists)
-                <input type="hidden" name="id" value="{{ $agenzia->id }}">
-                <div class="alert alert-secondary">
-                    ID: <strong>{{ $agenzia->id }}</strong> — TOKEN: <strong>{{ $agenzia->token }}</strong>
-                    @if ($agenzia->token_interno) — TOKEN INTERNO: <strong>{{ $agenzia->token_interno }}</strong> @endif
-                </div>
-            @endif
+        <div class="adm-form">
+            {{-- Navigazione tab --}}
+            <nav class="adm-tabs" role="tablist">
+                @foreach (AgencyAdminController::FIELD_GROUPS as $sezione => $campi)
+                    @php $short = Str::before($sezione, ' ('); @endphp
+                    <button type="button" class="adm-tab {{ $loop->first ? 'is-active' : '' }}" data-tab="sec{{ $loop->index }}">
+                        <i class="fas {{ $sectionIcons[$loop->index] ?? 'fa-folder' }}"></i> {{ $short }}
+                    </button>
+                @endforeach
+                <button type="button" class="adm-tab" data-tab="secImg">
+                    <i class="fas fa-image"></i> Immagini
+                </button>
+            </nav>
 
-            {{-- Campi testuali per sezione --}}
-            @foreach (AgencyAdminController::FIELD_GROUPS as $sezione => $campi)
-                <div class="card mb-3">
-                    <div class="card-header"><strong>{{ $sezione }}</strong></div>
-                    <div class="card-body">
-                        <div class="row">
+            {{-- Pannelli --}}
+            <div class="adm-tabbody">
+                @foreach (AgencyAdminController::FIELD_GROUPS as $sezione => $campi)
+                    @php
+                        $short = Str::before($sezione, ' (');
+                        $hint = Str::contains($sezione, '(') ? rtrim(Str::after($sezione, ' ('), ')') : null;
+                    @endphp
+                    <section class="adm-panel {{ $loop->first ? 'is-active' : '' }}" id="sec{{ $loop->index }}" role="tabpanel">
+                        <h2 class="adm-panel__title">{{ $short }}</h2>
+                        @if ($hint)<p class="adm-panel__hint">{{ ucfirst($hint) }}</p>@endif
+                        <div class="adm-fieldgrid">
                             @foreach ($campi as $campo)
-                                <div class="col-md-6 mb-2">
-                                    <label for="{{ $campo }}" class="mb-0"><small><strong>{{ $campo }}</strong></small></label>
-                                    @if (in_array($campo, ['info_indirizzi_sedi', 'info_orari_sedi', 'numeri_utili_salute', 'numeri_utili_assistenza', 'numeri_utili_noleggio', 'notifica_testo', 'colori']))
-                                        <textarea class="form-control form-control-sm" id="{{ $campo }}" name="{{ $campo }}" rows="2">{{ old($campo, $agenzia->{$campo}) }}</textarea>
+                                @php $wide = in_array($campo, $textareaFields, true); @endphp
+                                <div class="adm-field {{ $wide ? 'adm-field--wide' : '' }}">
+                                    <label for="{{ $campo }}">{{ ucfirst(str_replace('_', ' ', $campo)) }} <code>{{ $campo }}</code></label>
+                                    @if ($wide)
+                                        <textarea class="adm-textarea" id="{{ $campo }}" name="{{ $campo }}" rows="2">{{ old($campo, $agenzia->{$campo}) }}</textarea>
                                     @else
-                                        <input type="text" class="form-control form-control-sm" id="{{ $campo }}" name="{{ $campo }}" value="{{ old($campo, $agenzia->{$campo}) }}">
+                                        <input type="text" class="adm-input" id="{{ $campo }}" name="{{ $campo }}" value="{{ old($campo, $agenzia->{$campo}) }}">
                                     @endif
                                 </div>
                             @endforeach
                         </div>
-                    </div>
-                </div>
-            @endforeach
+                    </section>
+                @endforeach
 
-            {{-- Immagini --}}
-            <div class="card mb-3">
-                <div class="card-header"><strong>Immagini (solo PNG)</strong></div>
-                <div class="card-body">
-                    <div class="row">
+                {{-- Immagini --}}
+                <section class="adm-panel" id="secImg" role="tabpanel">
+                    <h2 class="adm-panel__title">Immagini</h2>
+                    <p class="adm-panel__hint">Solo file PNG. Le immagini sono servite agli stessi percorsi pubblici (<code>/res/img/{{ $agenzia->id ?: '<id>' }}/…</code>).</p>
+                    <div class="adm-fieldgrid">
                         @foreach (AgencyAdminController::IMAGE_FIELDS as $campo)
-                            <div class="col-md-6 mb-3">
-                                <label for="{{ $campo }}" class="mb-0"><small><strong>{{ $campo }}</strong>@if ($campo === 'logo_agenzia' && ! $agenzia->exists)<span style="color:red;">* obbligatorio</span>@endif</small></label>
+                            <div class="adm-imgfield">
                                 @if ($agenzia->exists && $agenzia->{$campo})
-                                    <div><img src="{{ asset('res/'.$agenzia->{$campo}) }}" style="max-height:60px;" alt="{{ $campo }}"
-                                              onerror="this.style.display='none'"></div>
+                                    <img class="adm-imgfield__thumb" src="{{ url('res/' . $agenzia->{$campo}) }}" alt=""
+                                         onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                                    <div class="adm-imgfield__thumb d-none"><i class="fas fa-image"></i></div>
+                                @else
+                                    <div class="adm-imgfield__thumb"><i class="fas fa-image"></i></div>
                                 @endif
-                                <input class="form-control form-control-sm" type="file" id="{{ $campo }}" name="{{ $campo }}" accept="image/png">
+                                <div class="adm-imgfield__body">
+                                    <label for="{{ $campo }}">
+                                        {{ ucfirst(str_replace('_', ' ', $campo)) }}
+                                        @if ($campo === 'logo_agenzia' && ! $agenzia->exists)<span class="adm-req">* obbligatorio</span>@endif
+                                    </label>
+                                    <input class="adm-input" type="file" id="{{ $campo }}" name="{{ $campo }}" accept="image/png">
+                                </div>
                             </div>
                         @endforeach
                     </div>
+                </section>
+
+                <div class="adm-formbar">
+                    <a href="{{ url('home') }}" class="adm-btn adm-btn--ghost">Annulla</a>
+                    <button type="submit" class="adm-btn adm-btn--primary">
+                        <i class="fas fa-floppy-disk"></i> {{ $agenzia->exists ? 'Salva modifiche' : 'Crea agenzia' }}
+                    </button>
                 </div>
             </div>
-
-            <button type="submit" class="btn btn-danger btn-lg w-100">{{ $agenzia->exists ? 'SALVA MODIFICHE' : 'CREA AGENZIA' }}</button>
-        </form>
-    </div>
+        </div>
+    </form>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const tabs = document.querySelectorAll('.adm-tab');
+        const panels = document.querySelectorAll('.adm-panel');
+        tabs.forEach(tab => tab.addEventListener('click', function () {
+            tabs.forEach(t => t.classList.remove('is-active'));
+            panels.forEach(p => p.classList.remove('is-active'));
+            this.classList.add('is-active');
+            document.getElementById(this.dataset.tab)?.classList.add('is-active');
+        }));
+    })();
+</script>
+@endpush

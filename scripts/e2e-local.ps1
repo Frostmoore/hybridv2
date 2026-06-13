@@ -15,8 +15,8 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 
 $port = 8123
 $base = "http://127.0.0.1:$port"
-$hostMain = 'hybridandgogsv2.test'
-$hostAgencies = 'agencies.hybridandgogsv2.test'
+$hostMain = 'hybridandgogsv2.localhost'
+$hostAgencies = 'agencies.hybridandgogsv2.localhost'
 $script:passed = 0
 $script:failed = 0
 
@@ -153,54 +153,54 @@ Check 'login con nuova password' $login2.success
 Write-Host "== B. Pannello admin ==" -ForegroundColor Cyan
 
 $adm = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
-$loginPage = Invoke-WebRequest "$base/index.html" -Headers @{Host = $hostMain } -WebSession $adm
+$loginPage = Invoke-WebRequest "$base/login" -Headers @{Host = $hostMain } -WebSession $adm
 $csrf = Get-Csrf $loginPage.Content
 # I redirect post-login puntano al dominio .test (non risolvibile): non seguirli
-Post-NoRedirect "$base/authenticate.php" @{Host = $hostMain } $adm @{_token = $csrf; nomeutente = 'e2e.admin'; password = 'E2ePass!1' }
-$homePage = Invoke-WebRequest "$base/home.php" -Headers @{Host = $hostMain } -WebSession $adm
+Post-NoRedirect "$base/login" @{Host = $hostMain } $adm @{_token = $csrf; nomeutente = 'e2e.admin'; password = 'E2ePass!1' }
+$homePage = Invoke-WebRequest "$base/home" -Headers @{Host = $hostMain } -WebSession $adm
 Check 'login admin → home' ($homePage.Content -match 'Agenzie' -and $homePage.Content -match 'E2E Test Agency')
 
-$editPage = Invoke-WebRequest "$base/agenzia.php?id=$agId" -Headers @{Host = $hostMain } -WebSession $adm
+$editPage = Invoke-WebRequest "$base/agenzia/$agId" -Headers @{Host = $hostMain } -WebSession $adm
 $csrf = Get-Csrf $editPage.Content
 Check 'pagina modifica agenzia' ($editPage.Content -match 'E2ETOKEN123')
-Post-NoRedirect "$base/res/updateagenzia.php" @{Host = $hostMain } $adm @{_token = $csrf; id = $agId; quick_telefono = "06E2E$stamp" }
+Post-NoRedirect "$base/agenzia/$agId" @{Host = $hostMain } $adm @{_token = $csrf; id = $agId; quick_telefono = "06E2E$stamp" }
 $tel = (Tinker "echo App\Models\AgenziaNew::find($agId)->quick_telefono;").Trim()
 Check 'update agenzia persiste' ($tel -eq "06E2E$stamp")
 
-$gatePage = Invoke-WebRequest "$base/import_polizze.php" -Headers @{Host = $hostMain } -WebSession $adm
+$gatePage = Invoke-WebRequest "$base/import-polizze" -Headers @{Host = $hostMain } -WebSession $adm
 $csrf = Get-Csrf $gatePage.Content
 $importPw = (Tinker "echo config('hybrid.import_password') ?: 'NONCONFIG';").Trim()
 if ($importPw -ne 'NONCONFIG' -and $importPw) {
-    Post-NoRedirect "$base/import_polizze.php" @{Host = $hostMain } $adm @{_token = $csrf; pw = $importPw }
-    $importPage = Invoke-WebRequest "$base/import_polizze.php" -Headers @{Host = $hostMain } -WebSession $adm
+    Post-NoRedirect "$base/import-polizze" @{Host = $hostMain } $adm @{_token = $csrf; pw = $importPw }
+    $importPage = Invoke-WebRequest "$base/import-polizze" -Headers @{Host = $hostMain } -WebSession $adm
     Check 'import polizze: gate + token interni' ($importPage.Content -match 'Token interni' -and $importPage.Content -match 'E2EINTERNO456')
 } else {
     Check 'import polizze: gate password' ($gatePage.Content -match 'Password')
 }
 
-$notifPage = Invoke-WebRequest "$base/notifiche.php" -Headers @{Host = $hostMain } -WebSession $adm
+$notifPage = Invoke-WebRequest "$base/notifiche" -Headers @{Host = $hostMain } -WebSession $adm
 Check 'pagina notifiche admin' ($notifPage.Content -match 'Invia una Notifica')
 
 # ─── C. Pannello agencies (sottodominio) ─────────────────────────────────────
 Write-Host "== C. Pannello agencies ==" -ForegroundColor Cyan
 
 $ops = [Microsoft.PowerShell.Commands.WebRequestSession]::new()
-$agLogin = Invoke-WebRequest "$base/login.php" -Headers @{Host = $hostAgencies } -WebSession $ops
+$agLogin = Invoke-WebRequest "$base/login" -Headers @{Host = $hostAgencies } -WebSession $ops
 $csrf = Get-Csrf $agLogin.Content
 $logResp = Invoke-RestMethod "$base/api/v1/log.php" -Method Post -Headers @{Host = $hostAgencies; 'X-CSRF-TOKEN' = $csrf } -WebSession $ops -Body @{username = 'e2e.operatore'; password = 'E2ePass!1' }
 Check 'login operatore' ($logResp.success -and $logResp.message -eq 'Login riuscito')
 
-$utentiPage = Invoke-WebRequest "$base/utenti.php" -Headers @{Host = $hostAgencies } -WebSession $ops
+$utentiPage = Invoke-WebRequest "$base/utenti" -Headers @{Host = $hostAgencies } -WebSession $ops
 Check 'utenti agenzia (vede il nuovo utente)' ($utentiPage.Content -match $username)
 
-$csv = Invoke-WebRequest "$base/export_utenti.php" -Headers @{Host = $hostAgencies } -WebSession $ops
+$csv = Invoke-WebRequest "$base/export-utenti" -Headers @{Host = $hostAgencies } -WebSession $ops
 Check 'export CSV' ($csv.Headers.'Content-Type' -like 'text/csv*' -and $csv.Content -match 'Liberatoria' -and $csv.Content -match $username)
 
 # Invio notifica a tutti: chiavi OneSignal FINTE → la chiamata vera fallisce,
 # ma il flusso (validazioni + insert su notifiche/notifiche_generali) è esercitato
 $prima = [int](Tinker "echo App\Models\NotificaGenerale::where('notifica_agid',$agId)->count();").Trim()
 # Il login rigenera la sessione: serve il token CSRF fresco dalla pagina
-$notifAllPage = Invoke-WebRequest "$base/new_notification_all.php" -Headers @{Host = $hostAgencies } -WebSession $ops
+$notifAllPage = Invoke-WebRequest "$base/notifiche/tutti" -Headers @{Host = $hostAgencies } -WebSession $ops
 $csrf = Get-Csrf $notifAllPage.Content
 $sendAll = Invoke-RestMethod "$base/api/v1/send_notification_all.php" -Method Post -Headers @{Host = $hostAgencies; 'X-CSRF-TOKEN' = $csrf } -WebSession $ops -Body @{agenziaid = $agId; titolo = "E2E Push $stamp"; testo = 'Test e2e'; notifica_scadenza = '2027-01-01 12:00:00' }
 $dopo = [int](Tinker "echo App\Models\NotificaGenerale::where('notifica_agid',$agId)->count();").Trim()

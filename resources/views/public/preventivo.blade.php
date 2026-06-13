@@ -3,51 +3,50 @@
 @section('title', 'Richiedi un Preventivo — '.$agenzia->nome_agenzia)
 
 @section('content')
-    <div class="header_agenzia" style="background-image: url('{{ asset('res/img/'.$agenzia->id.'/header_agenzia.png') }}'); height: 200px; background-position: center; background-size: cover; width: auto;"></div>
-    <div class="page_denuncia">
-        <h1 style="text-align:center;margin-top:30px;" class="h1_form_denuncia">Richiedi un Preventivo su {{ $agenzia->nome_agenzia }}</h1>
-        <div class="form_auto_wrapper" id="form_auto_wrapper">
+    <div class="pub-hero" style="background-image: url('{{ asset('res/img/'.$agenzia->id.'/header_agenzia.png') }}');">
+        <h1 class="pub-hero__title">Richiedi un Preventivo su {{ $agenzia->nome_agenzia }}</h1>
+    </div>
+
+    <div class="pub-wrap">
+        <div class="adm-block">
             <form action="{{ url('res/richiestapreventivo.php') }}" method="post" enctype="multipart/form-data" id="form_preventivo">
                 @csrf
-                <div class="row_form_denuncia">
-                    <div class="form-group-denuncia">
-                        <label for="primo_nome_preventivo" class="label_denuncia">Il tuo Nome<span style="color: red;">*</span></label><br />
-                        <input type="text" class="form-control" id="primo_nome_preventivo" name="primo_nome_preventivo" placeholder="Es. Mario">
+                <div class="adm-fieldgrid">
+                    <div class="adm-field">
+                        <label for="primo_nome_preventivo">Il tuo Nome <span class="adm-req">*</span></label>
+                        <input type="text" class="adm-input" id="primo_nome_preventivo" name="primo_nome_preventivo" placeholder="Es. Mario">
                     </div>
-                    <div class="form-group-denuncia">
-                        <label for="cognome_preventivo" class="label_denuncia">Il tuo Cognome<span style="color: red;">*</span></label><br />
-                        <input type="text" class="form-control" id="cognome_preventivo" name="cognome_preventivo" placeholder="Es. Rossi">
+                    <div class="adm-field">
+                        <label for="cognome_preventivo">Il tuo Cognome <span class="adm-req">*</span></label>
+                        <input type="text" class="adm-input" id="cognome_preventivo" name="cognome_preventivo" placeholder="Es. Rossi">
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="email_preventivo" class="label_denuncia">Il tuo Indirizzo e-mail<span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" id="email_preventivo" name="email_preventivo" placeholder="Es. mario.rossi@email.it">
-                    <small class="form-text text-muted">Questo sarà l'indirizzo al quale riceverai la risposta.</small>
+                <div class="adm-field" style="margin-top:14px;">
+                    <label for="email_preventivo">Il tuo Indirizzo e-mail <span class="adm-req">*</span></label>
+                    <input type="text" class="adm-input" id="email_preventivo" name="email_preventivo" placeholder="Es. mario.rossi@email.it">
+                    <small class="text-muted">Questo sarà l'indirizzo al quale riceverai la risposta.</small>
                 </div>
-                <div class="form-group">
-                    <label for="descrizione_preventivo" class="label_denuncia">Descrivi brevemente la tua richiesta di preventivo<span style="color: red;">*</span></label>
-                    <textarea class="form-control" id="descrizione_preventivo" name="descrizione_preventivo" rows="5"></textarea>
+                <div class="adm-field" style="margin-top:14px;">
+                    <label for="descrizione_preventivo">Descrivi brevemente la tua richiesta di preventivo <span class="adm-req">*</span></label>
+                    <textarea class="adm-textarea" id="descrizione_preventivo" name="descrizione_preventivo" rows="5"></textarea>
                 </div>
-                <div class="mb-3">
-                    <label for="documenti_preventivo" class="label_denuncia">Carica fronte e retro del tuo documento<span style="color: red;">*</span></label>
-                    <input class="form-control" type="file" id="documenti_preventivo" name="documenti_preventivo[]" multiple>
-                    <small class="form-text text-muted">Puoi scattare due foto o caricarla in PDF!</small>
+                <div class="adm-field" style="margin-top:14px;">
+                    <label for="documenti_preventivo">Carica fronte e retro del tuo documento <span class="adm-req">*</span></label>
+                    <input class="adm-input" type="file" id="documenti_preventivo" name="documenti_preventivo[]" multiple>
+                    <small class="text-muted">Puoi scattare due foto o caricarla in PDF!</small>
                 </div>
-                <div class="form-group">
-                    <h4>Dichiarazione di accettazione della liberatoria privacy</h4>
-                    <p class="form_privacy">Dichiaro di aver preso visione della <a href="{{ $agenzia->privacy_agenzia }}">Privacy policy</a> e autorizzo l'agenzia {{ $agenzia->nome_agenzia }} al trattamento dei miei dati personali, che saranno trattati ex Artt. 13-14 del Regolamento (UE) n. 679/2016 (c.d. G.D.P.R.) sulla protezione dei dati personali, per le finalità ivi indicate.</p>
-                    <div class="row_form_denuncia_center">
-                        <input type="checkbox" id="checkbox_privacy_preventivo" name="checkbox_privacy_preventivo" class="cb_denuncia">
-                        <label for="checkbox_privacy_preventivo" class="label_privacy">Do il consenso<span style="color: red;">*</span></label><br>
-                    </div>
+                <h4 style="margin:20px 0 6px; font-size:1rem;">Dichiarazione di accettazione della liberatoria privacy</h4>
+                <p class="pub-privacy">Dichiaro di aver preso visione della <a href="{{ $agenzia->privacy_agenzia }}">Privacy policy</a> e autorizzo l'agenzia {{ $agenzia->nome_agenzia }} al trattamento dei miei dati personali, che saranno trattati ex Artt. 13-14 del Regolamento (UE) n. 679/2016 (c.d. G.D.P.R.) sulla protezione dei dati personali, per le finalità ivi indicate.</p>
+                <div class="pub-check">
+                    <input type="checkbox" id="checkbox_privacy_preventivo" name="checkbox_privacy_preventivo">
+                    <label for="checkbox_privacy_preventivo">Do il consenso <span class="adm-req">*</span></label>
                 </div>
                 <input type="hidden" name="agenzia_id_preventivo" id="agenzia_id_preventivo" value="{{ $agenzia->id }}">
-                <div class="errore a_hidden" id="errore">
-                    <h2>ATTENZIONE!</h2>
-                    <p id="p_errore"></p>
+                <div class="errore a_hidden adm-flash adm-flash--err" id="errore" style="margin-top:16px;">
+                    <strong>ATTENZIONE!</strong> <span id="p_errore"></span>
                 </div>
-                <div class="rowbottone">
-                    <button type="button" class="bottone_submit_denuncia_auto" onclick="richiediPreventivo()">RICHIEDI PREVENTIVO</button>
+                <div style="margin-top:18px;">
+                    <button type="button" class="adm-btn adm-btn--primary" style="width:100%; justify-content:center;" onclick="richiediPreventivo()">Richiedi preventivo</button>
                 </div>
             </form>
         </div>

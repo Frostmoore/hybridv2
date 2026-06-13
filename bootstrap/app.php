@@ -36,10 +36,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'operatore.timeout' => \App\Http\Middleware\OperatoreSessionTimeout::class,
         ]);
 
-        // Ospiti non autenticati → pagina di login del dominio giusto
-        $middleware->redirectGuestsTo(fn (Request $request) => $request->getHost() === config('hybrid.domain_agencies')
-            ? url('login.php')
-            : url('index.html'));
+        // Ospiti non autenticati → /login (entrambi i domini hanno questa route,
+        // url() usa l'host della richiesta corrente)
+        $middleware->redirectGuestsTo(fn () => url('login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         $isApi = fn (Request $request): bool => $request->is('res/api/*');

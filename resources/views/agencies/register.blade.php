@@ -2,31 +2,33 @@
 
 @section('title', 'Registrazione Operatore')
 
-@section('content')
-    <div class="page-content">
-        <div class="col-md-4">
-            <div class="card shadow-lg">
-                <div class="card-body">
-                    <h3 class="text-center mb-4">Registrati</h3>
-                    <p class="text-muted text-center"><small>L'account dovrà essere attivato da un amministratore prima di poter accedere.</small></p>
-                    <form id="regForm">
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Registrati</button>
-                    </form>
-                    <div id="esito" class="mt-3 text-center"></div>
-                </div>
+@section('content-raw')
+    <div class="adm-authwrap">
+        <div class="adm-authcard">
+            <div style="text-align:center; margin-bottom:16px;">
+                <span class="adm-brand__mark" style="display:inline-grid; width:48px; height:48px; font-size:1.3rem;">
+                    <i class="fas fa-user-plus"></i>
+                </span>
             </div>
+            <h1>Registrati</h1>
+            <p class="sub">L'account dovrà essere attivato da un amministratore prima dell'accesso.</p>
+
+            <form id="regForm">
+                <div class="adm-field" style="margin-bottom:14px;">
+                    <label for="username">Username</label>
+                    <input type="text" class="adm-input" id="username" name="username" required autofocus>
+                </div>
+                <div class="adm-field" style="margin-bottom:14px;">
+                    <label for="email">Email</label>
+                    <input type="email" class="adm-input" id="email" name="email" required>
+                </div>
+                <div class="adm-field" style="margin-bottom:18px;">
+                    <label for="password">Password</label>
+                    <input type="password" class="adm-input" id="password" name="password" required>
+                </div>
+                <button type="submit" class="adm-btn adm-btn--primary" style="width:100%; justify-content:center;">Registrati</button>
+            </form>
+            <div id="esito" style="margin-top:14px;"></div>
         </div>
     </div>
 @endsection
@@ -41,8 +43,8 @@
             headers: { 'X-CSRF-TOKEN': @json(csrf_token()) },
             data: { username: $("#username").val(), email: $("#email").val(), password: $("#password").val() },
             dataType: "json",
-            success: r => $("#esito").html('<div class="alert alert-' + (r.success ? 'success' : 'danger') + '">' + r.message + '</div>'),
-            error: () => $("#esito").html('<div class="alert alert-danger">Errore di connessione.</div>'),
+            success: r => $("#esito").html('<div class="adm-flash adm-flash--' + (r.success ? 'ok' : 'err') + '">' + r.message + '</div>'),
+            error: () => $("#esito").html('<div class="adm-flash adm-flash--err">Errore di connessione.</div>'),
         });
     });
 </script>

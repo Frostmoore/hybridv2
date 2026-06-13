@@ -1,48 +1,65 @@
 @extends('layouts.agencies')
 
-@section('title', 'Utenti — Pannello Agenzie')
+@section('title', 'Utenti')
 
 @section('content')
-    <div class="container my-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h2>Utenti dell'agenzia</h2>
-            <a href="{{ url('export_utenti.php') }}" class="btn btn-success"><i class="fas fa-file-csv"></i> Esporta CSV</a>
+    <div class="adm-pagehead">
+        <div>
+            <h1>Utenti dell'agenzia</h1>
+            <p>{{ $clienti->count() }} {{ $clienti->count() === 1 ? 'utente registrato' : 'utenti registrati' }}.</p>
         </div>
-        <div class="table-responsive">
-            <table class="table table-striped table-sm">
-                <thead>
-                    <tr>
-                        <th>ID</th><th>Username</th><th>Email</th><th>Telefono</th>
-                        <th>Nome</th><th>Cognome</th><th>CF</th><th>Nascita</th>
-                        <th>Primo Accesso</th><th>Ultimo Accesso</th><th>Stato</th>
+        <a href="{{ url('export-utenti') }}" class="adm-btn adm-btn--primary"><i class="fas fa-file-csv"></i> Esporta CSV</a>
+    </div>
+
+    <div class="adm-search">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="text" id="utSearch" placeholder="Cerca per nome, username, email, CF…" autocomplete="off">
+    </div>
+
+    <div class="adm-tablewrap">
+        <table class="adm-table" id="utTable">
+            <thead>
+                <tr>
+                    <th>ID</th><th>Username</th><th>Email</th><th>Telefono</th>
+                    <th>Nome</th><th>Cognome</th><th>CF</th><th>Ultimo accesso</th><th>Stato</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($clienti as $c)
+                    <tr data-search="{{ Str::lower($c->username . ' ' . $c->nome . ' ' . $c->cognome . ' ' . $c->email . ' ' . $c->cf) }}">
+                        <td>{{ $c->id }}</td>
+                        <td>{{ $c->username }}</td>
+                        <td>{{ $c->email }}</td>
+                        <td>{{ $c->telefono }}</td>
+                        <td>{{ $c->nome }}</td>
+                        <td>{{ $c->cognome }}</td>
+                        <td><span class="adm-chip">{{ $c->cf ?: '—' }}</span></td>
+                        <td>{{ $c->lastlogin }}</td>
+                        <td>
+                            @if ((string) $c->active === '1')
+                                <span class="adm-badge adm-badge--on"><i class="fas fa-circle-check"></i> Attivo</span>
+                            @else
+                                <span class="adm-badge adm-badge--off"><i class="fas fa-circle-pause"></i> Disattivo</span>
+                            @endif
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @forelse ($clienti as $c)
-                        <tr>
-                            <td>{{ $c->id }}</td>
-                            <td>{{ $c->username }}</td>
-                            <td>{{ $c->email }}</td>
-                            <td>{{ $c->telefono }}</td>
-                            <td>{{ $c->nome }}</td>
-                            <td>{{ $c->cognome }}</td>
-                            <td>{{ $c->cf }}</td>
-                            <td>{{ $c->datadinascita }}</td>
-                            <td>{{ $c->firstlogin }}</td>
-                            <td>{{ $c->lastlogin }}</td>
-                            <td>
-                                @if ((string) $c->active === '1')
-                                    <span class="badge bg-success">Attivo</span>
-                                @else
-                                    <span class="badge bg-secondary">Disattivato</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="11" class="text-center text-muted">Nessun utente per questa agenzia.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                @empty
+                    <tr><td colspan="9" class="text-center text-muted" style="padding:24px;">Nessun utente per questa agenzia.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    (function () {
+        const input = document.getElementById('utSearch');
+        const rows = Array.from(document.querySelectorAll('#utTable tbody tr[data-search]'));
+        input.addEventListener('input', function () {
+            const q = this.value.trim().toLowerCase();
+            rows.forEach(r => r.style.display = r.dataset.search.includes(q) ? '' : 'none');
+        });
+    })();
+</script>
+@endpush

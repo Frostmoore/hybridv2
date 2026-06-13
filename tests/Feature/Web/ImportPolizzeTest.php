@@ -30,29 +30,29 @@ class ImportPolizzeTest extends V2TestCase
     {
         config(['hybrid.import_password' => 'SegretaImport!']);
 
-        $this->get($this->host('import_polizze.php'))->assertOk()->assertSee('Password');
+        $this->get($this->host('import-polizze'))->assertOk()->assertSee('Password');
 
-        $this->post($this->host('import_polizze.php'), ['pw' => 'sbagliata'])
+        $this->post($this->host('import-polizze'), ['pw' => 'sbagliata'])
             ->assertOk()->assertSee('Password non corretta.');
 
-        $this->post($this->host('import_polizze.php'), ['pw' => 'SegretaImport!'])
+        $this->post($this->host('import-polizze'), ['pw' => 'SegretaImport!'])
             ->assertRedirect();
 
-        $this->get($this->host('import_polizze.php'))->assertOk()->assertSee('Token interni');
+        $this->get($this->host('import-polizze'))->assertOk()->assertSee('Token interni');
     }
 
     public function test_system_b_upsert_import(): void
     {
         config(['hybrid.import_password' => 'pw']);
         $agency = $this->makeAgency();
-        $this->post($this->host('import_polizze.php'), ['pw' => 'pw']);
+        $this->post($this->host('import-polizze'), ['pw' => 'pw']);
 
         $csv = "CF;N.POLIZZA;COMPAGNIA;DATA DECORRENZA\n"
             ."rssmra80a01h501z;P001;Generali;01/01/2026\n"
             ."VRDLGU85B02H501Y;P002;Allianz;45658\n"   // 45658 = seriale Excel (1/1/2025)
             .";SENZACF;X;\n";                            // riga senza CF → saltata
 
-        $this->post($this->host('import_polizze.php'), [
+        $this->post($this->host('import-polizze'), [
             'agency_id' => $agency->id,
             'mode' => 'upsert',
             'import_file' => $this->csvUpload($csv),
@@ -68,7 +68,7 @@ class ImportPolizzeTest extends V2TestCase
 
         // Upsert: re-import della stessa polizza aggiorna invece di duplicare
         $csv2 = "CF;N.POLIZZA;COMPAGNIA\nRSSMRA80A01H501Z;P001;Unipol\n";
-        $this->post($this->host('import_polizze.php'), [
+        $this->post($this->host('import-polizze'), [
             'agency_id' => $agency->id,
             'mode' => 'upsert',
             'import_file' => $this->csvUpload($csv2),
@@ -83,9 +83,9 @@ class ImportPolizzeTest extends V2TestCase
         $agency = $this->makeAgency();
         Polizza::create(['id_agenzia' => $agency->id, 'cf' => 'VECCHIO', 'n_polizza' => 'OLD1']);
         Polizza::create(['id_agenzia' => 999, 'cf' => 'ALTRA', 'n_polizza' => 'KEEP']);
-        $this->post($this->host('import_polizze.php'), ['pw' => 'pw']);
+        $this->post($this->host('import-polizze'), ['pw' => 'pw']);
 
-        $this->post($this->host('import_polizze.php'), [
+        $this->post($this->host('import-polizze'), [
             'agency_id' => $agency->id,
             'mode' => 'replace',
             'import_file' => $this->csvUpload("CF;N.POLIZZA\nNUOVO;NEW1\n"),
@@ -100,9 +100,9 @@ class ImportPolizzeTest extends V2TestCase
     {
         config(['hybrid.import_password' => 'pw']);
         $agency = $this->makeAgency();
-        $this->post($this->host('import_polizze.php'), ['pw' => 'pw']);
+        $this->post($this->host('import-polizze'), ['pw' => 'pw']);
 
-        $this->post($this->host('import_polizze.php'), [
+        $this->post($this->host('import-polizze'), [
             'agency_id' => $agency->id,
             'mode' => 'upsert',
             'import_file' => $this->csvUpload("NOME;N.POLIZZA\nx;P1\n"),
@@ -122,7 +122,7 @@ class ImportPolizzeTest extends V2TestCase
 
     public function test_system_a_requires_admin(): void
     {
-        $this->get($this->host('importa_polizze.php'))->assertRedirect();
+        $this->get($this->host('importa-polizze'))->assertRedirect();
     }
 
     public function test_system_a_full_wizard_flow(): void
@@ -136,7 +136,7 @@ class ImportPolizzeTest extends V2TestCase
             ."RSSMRA80A01H501Z;A100;Generali;31/12/2026;1.234,56\n"
             ."SCONOSCIUTO;B200;Allianz;2026-06-30;100\n";
 
-        $response = $this->actingAs($admin, 'admin')->post($this->host('importa_polizze.php'), [
+        $response = $this->actingAs($admin, 'admin')->post($this->host('importa-polizze'), [
             'step' => '1',
             'id_agenzia' => $agency->id,
             'delimiter' => ';',
@@ -146,10 +146,10 @@ class ImportPolizzeTest extends V2TestCase
         ]);
 
         // Step 2 con mapping auto-indovinato
-        $response->assertOk()->assertSee('Step 2')->assertSee('codice_fiscale');
+        $response->assertOk()->assertSee('Mappa le colonne')->assertSee('codice_fiscale');
 
         // Process (AJAX)
-        $this->actingAs($admin, 'admin')->postJson($this->host('res/import_process.php'), [
+        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze/process'), [
             'mapping' => [
                 'cf' => 'codice_fiscale',
                 'numero_polizza' => 'num_polizza',
@@ -182,24 +182,24 @@ class ImportPolizzeTest extends V2TestCase
         $csv = "cf;polizza;compagnia\nNUOVOCF;DUP1;Nuova\n";
 
         // onDup = skip (default)
-        $this->actingAs($admin, 'admin')->post($this->host('importa_polizze.php'), [
+        $this->actingAs($admin, 'admin')->post($this->host('importa-polizze'), [
             'step' => '1', 'id_agenzia' => $agency->id, 'delimiter' => ';',
             'on_duplicate' => 'skip',
             'polizze_file' => $this->csvUpload($csv),
         ]);
-        $this->actingAs($admin, 'admin')->postJson($this->host('res/import_process.php'), [
+        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze/process'), [
             'mapping' => ['cf' => 'cf', 'numero_polizza' => 'polizza', 'compagnia' => 'compagnia'],
             'datefmt' => [],
         ])->assertJsonPath('saltati', 1);
         $this->assertSame('Vecchia', PolizzaImportata::where('numero_polizza', 'DUP1')->first()->compagnia);
 
         // onDup = update
-        $this->actingAs($admin, 'admin')->post($this->host('importa_polizze.php'), [
+        $this->actingAs($admin, 'admin')->post($this->host('importa-polizze'), [
             'step' => '1', 'id_agenzia' => $agency->id, 'delimiter' => ';',
             'on_duplicate' => 'update',
             'polizze_file' => $this->csvUpload($csv),
         ]);
-        $this->actingAs($admin, 'admin')->postJson($this->host('res/import_process.php'), [
+        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze/process'), [
             'mapping' => ['cf' => 'cf', 'numero_polizza' => 'polizza', 'compagnia' => 'compagnia'],
             'datefmt' => [],
         ])->assertJsonPath('aggiornati', 1);

@@ -28,13 +28,13 @@ class AgenciesPanelTest extends V2TestCase
 
     public function test_root_redirects_to_login_when_guest(): void
     {
-        $this->get($this->host('/'))->assertRedirect($this->host('login.php'));
-        $this->get($this->host('index.php'))->assertRedirect($this->host('login.php'));
+        $this->get($this->host('/'))->assertRedirect($this->host('login'));
+        $this->get($this->host('index.php'))->assertRedirect($this->host('login'));
     }
 
     public function test_login_page_renders(): void
     {
-        $this->get($this->host('login.php'))->assertOk()->assertSee('Accedi');
+        $this->get($this->host('login'))->assertOk()->assertSee('Accedi');
     }
 
     public function test_api_login_contract(): void
@@ -61,8 +61,8 @@ class AgenciesPanelTest extends V2TestCase
 
     public function test_guest_redirected_from_protected_pages(): void
     {
-        $this->get($this->host('home.php'))->assertRedirect($this->host('login.php'));
-        $this->get($this->host('utenti.php'))->assertRedirect();
+        $this->get($this->host('home'))->assertRedirect($this->host('login'));
+        $this->get($this->host('utenti'))->assertRedirect();
     }
 
     public function test_session_timeout_logs_out(): void
@@ -71,8 +71,8 @@ class AgenciesPanelTest extends V2TestCase
 
         $this->actingAs($op, 'operatore')
             ->withSession(['operatore_last_activity' => time() - 4000])
-            ->get($this->host('home.php'))
-            ->assertRedirect($this->host('login.php?session_expired=1'));
+            ->get($this->host('home'))
+            ->assertRedirect($this->host('login?session_expired=1'));
 
         $this->assertGuest('operatore');
     }
@@ -88,7 +88,7 @@ class AgenciesPanelTest extends V2TestCase
         $op = $this->operatore(['agid' => $agency->id]);
 
         $this->actingAs($op, 'operatore')
-            ->get($this->host('utenti.php'))
+            ->get($this->host('utenti'))
             ->assertOk()
             ->assertSee('mio.cliente')
             ->assertDontSee('altrui.cliente');
@@ -104,7 +104,7 @@ class AgenciesPanelTest extends V2TestCase
         ]);
         $op = $this->operatore(['agid' => $agency->id]);
 
-        $response = $this->actingAs($op, 'operatore')->get($this->host('export_utenti.php'));
+        $response = $this->actingAs($op, 'operatore')->get($this->host('export-utenti'));
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
 
@@ -124,8 +124,8 @@ class AgenciesPanelTest extends V2TestCase
         $op = $this->operatore();
 
         $this->actingAs($op, 'operatore')
-            ->get($this->host('operators.php'))
-            ->assertRedirect($this->host('home.php'));
+            ->get($this->host('operatori'))
+            ->assertRedirect($this->host('home'));
     }
 
     public function test_operators_page_for_superadmin(): void
@@ -134,7 +134,7 @@ class AgenciesPanelTest extends V2TestCase
         $superadmin = $this->operatore(['username' => 'smp-webmaster', 'email' => 'sa@test.it']);
 
         $this->actingAs($superadmin, 'operatore')
-            ->get($this->host('operators.php'))
+            ->get($this->host('operatori'))
             ->assertOk()
             ->assertSee('Gestione Operatori');
     }

@@ -17,7 +17,7 @@ class DomainRoutingTest extends TestCase
     {
         // La root del dominio agencies redirige alla login operatori
         $this->get('http://'.config('hybrid.domain_agencies').'/')
-            ->assertRedirect('http://'.config('hybrid.domain_agencies').'/login.php');
+            ->assertRedirect('http://'.config('hybrid.domain_agencies').'/login');
     }
 
     public function test_health_check(): void

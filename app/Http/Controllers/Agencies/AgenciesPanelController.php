@@ -21,8 +21,8 @@ class AgenciesPanelController extends Controller
     public function index()
     {
         return Auth::guard('operatore')->check()
-            ? redirect('home.php')
-            : redirect('login.php');
+            ? redirect('home')
+            : redirect('login');
     }
 
     public function home()
@@ -108,7 +108,7 @@ class AgenciesPanelController extends Controller
         /** @var Operatore $operatore */
         $operatore = Auth::guard('operatore')->user();
         if (! in_array($operatore->username, config('hybrid.agencies_superadmins'), true)) {
-            return redirect('home.php');   // come il legacy
+            return redirect('home');   // come il legacy
         }
 
         return view('agencies.operators', [
