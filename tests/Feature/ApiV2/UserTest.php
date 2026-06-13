@@ -45,17 +45,30 @@ class UserTest extends V2TestCase
             ->assertJsonPath('error', 'Il campo username non può essere vuoto.');
     }
 
-    public function test_patch_me_duplicate_username_global_409(): void
+    public function test_patch_me_duplicate_username_same_agency_409(): void
     {
         $agency = $this->makeAgency();
-        $other = $this->makeAgency(['token' => 'other']);
         $cliente = $this->makeCliente($agency);
-        // ⚠️ unicità GLOBALE come legacy: utente di ALTRA agenzia blocca comunque
-        $this->makeCliente($other, ['username' => 'occupato', 'email' => 'x@y.it', 'cf' => 'ALTRO']);
+        // stesso username nella STESSA agenzia → conflitto
+        $this->makeCliente($agency, ['username' => 'occupato', 'email' => 'x@y.it', 'cf' => 'ALTRO']);
 
         $this->patchJson('/res/api/v2/user/me.php', ['username' => 'occupato'], $this->authHeaders($cliente))
             ->assertStatus(409)
             ->assertJsonPath('code', 'DUPLICATE_USERNAME');
+    }
+
+    public function test_patch_me_same_username_other_agency_allowed(): void
+    {
+        $agency = $this->makeAgency();
+        $other = $this->makeAgency(['token' => 'other']);
+        $cliente = $this->makeCliente($agency);
+        // stesso username in ALTRA agenzia → consentito (multi-tenant, coerente con register)
+        $this->makeCliente($other, ['username' => 'occupato', 'email' => 'x@y.it', 'cf' => 'ALTRO']);
+
+        $this->patchJson('/res/api/v2/user/me.php', ['username' => 'occupato'], $this->authHeaders($cliente))
+            ->assertOk()
+            ->assertJsonPath('data.message', 'Profilo aggiornato.');
+        $this->assertSame('occupato', $cliente->fresh()->username);
     }
 
     public function test_patch_me_no_fields_422(): void

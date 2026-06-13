@@ -23,6 +23,8 @@ Route::prefix('res/api/v2')->group(function () {
     // ── Pubblici (no auth) ──────────────────────────────────────────────
     Route::get('agency.php', [AgencyController::class, 'show']);
     Route::post('auth/login.php', [AuthController::class, 'login']);
+    Route::post('auth/refresh.php', [AuthController::class, 'refresh']);
+    Route::post('auth/logout.php', [AuthController::class, 'logout']);
     Route::post('auth/register.php', [AuthController::class, 'register']);
     Route::post('auth/forgot-password.php', [AuthController::class, 'forgotPassword']);
     Route::get('notifications/general.php', [NotificationController::class, 'general']);

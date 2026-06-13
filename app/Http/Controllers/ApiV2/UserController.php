@@ -27,7 +27,9 @@ class UserController extends V2Controller
 
     public function me(Request $request): JsonResponse
     {
-        $userId = (int) ($this->claims($request)['sub'] ?? 0);
+        $claims = $this->claims($request);
+        $userId = (int) ($claims['sub'] ?? 0);
+        $agencyId = (int) ($claims['agency_id'] ?? 0);
 
         if ($request->isMethod('GET')) {
             $user = Cliente::find($userId);
@@ -48,8 +50,11 @@ class UserController extends V2Controller
             if ($newUsername === '') {
                 return ApiResponse::err('Il campo username non può essere vuoto.', 'VALIDATION_ERROR', 422);
             }
-            // ⚠️ unicità GLOBALE come il legacy (incoerente con register, vedi critics.md)
-            $taken = Cliente::where('username', $newUsername)->where('id', '<>', $userId)->exists();
+            // Unicità PER AGENZIA, coerente con la registrazione (vedi critics.md)
+            $taken = Cliente::where('agenziaid', $agencyId)
+                ->where('username', $newUsername)
+                ->where('id', '<>', $userId)
+                ->exists();
             if ($taken) {
                 return ApiResponse::err('Username già in uso.', 'DUPLICATE_USERNAME', 409);
             }
@@ -61,7 +66,10 @@ class UserController extends V2Controller
             if ($newEmail === '') {
                 return ApiResponse::err('Il campo email non può essere vuoto.', 'VALIDATION_ERROR', 422);
             }
-            $taken = Cliente::where('email', $newEmail)->where('id', '<>', $userId)->exists();
+            $taken = Cliente::where('agenziaid', $agencyId)
+                ->where('email', $newEmail)
+                ->where('id', '<>', $userId)
+                ->exists();
             if ($taken) {
                 return ApiResponse::err('Email già in uso.', 'DUPLICATE_EMAIL', 409);
             }

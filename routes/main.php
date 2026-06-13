@@ -69,9 +69,9 @@ Route::middleware('auth:admin')->group(function () {
     Route::get('importa_polizze.php', fn () => redirect('/importa-polizze'));
     Route::post('res/import_process.php', [\App\Http\Controllers\Web\ImportaPolizzeController::class, 'process']);
 
-    // Pagina notifiche (incompleta anche nel legacy — vedi critics.md)
-    Route::get('notifiche', fn () => view('admin.notifiche'));
-    Route::post('notifiche', fn () => redirect('notifiche')->with('status', 'Funzione non operativa: lo era anche nel sistema precedente. In attesa di specifiche.'));
+    // Notifiche admin: broadcast globale a TUTTI gli utenti del sistema
+    Route::get('notifiche', [\App\Http\Controllers\Web\AdminNotificationController::class, 'page']);
+    Route::post('notifiche', [\App\Http\Controllers\Web\AdminNotificationController::class, 'broadcast']);
     Route::get('notifiche.php', fn () => redirect('/notifiche'));
 });
 

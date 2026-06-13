@@ -120,6 +120,56 @@ class AdminPanelTest extends V2TestCase
             ->assertSee('tok1');
     }
 
+    // ─── Notifiche: broadcast globale ────────────────────────────────────
+
+    public function test_notifiche_broadcast_to_all_users(): void
+    {
+        \Illuminate\Support\Facades\Http::fake(['api.onesignal.com/*' => \Illuminate\Support\Facades\Http::response(['id' => 'ok'], 200)]);
+        $admin = $this->admin();
+
+        // Agenzia A con OneSignal + un utente; Agenzia B senza OneSignal + un utente
+        $a = $this->makeAgency(['token' => 'a', 'os_app_id' => 'app-a', 'os_api_key' => 'key-a']);
+        $b = $this->makeAgency(['token' => 'b', 'os_app_id' => '', 'os_api_key' => '']);
+        $this->makeCliente($a, ['username' => 'utente.a', 'email' => 'a@x.it', 'cf' => 'CFA']);
+        $this->makeCliente($b, ['username' => 'utente.b', 'email' => 'b@x.it', 'cf' => 'CFB']);
+
+        $this->actingAs($admin, 'admin')
+            ->from($this->host('notifiche'))
+            ->post($this->host('notifiche'), [
+                'notificationTitle' => 'Manutenzione', 'notificationText' => 'Domani alle 3.',
+            ])
+            ->assertRedirect($this->host('notifiche'));
+
+        // In-app + banner per ENTRAMBE le agenzie
+        $this->assertSame(2, \App\Models\Notifica::count());
+        $this->assertSame(2, \App\Models\NotificaGenerale::count());
+        $this->assertSame('utente.a', \App\Models\Notifica::where('agenziaid', $a->id)->first()->destinatari);
+
+        // Push solo per l'agenzia con OneSignal configurato
+        \Illuminate\Support\Facades\Http::assertSentCount(1);
+        \Illuminate\Support\Facades\Http::assertSent(fn ($r) => str_contains($r->url(), 'onesignal'));
+    }
+
+    public function test_notifiche_broadcast_requires_title_and_text(): void
+    {
+        $admin = $this->admin();
+        $this->makeAgency();
+
+        $this->actingAs($admin, 'admin')
+            ->from($this->host('notifiche'))
+            ->post($this->host('notifiche'), ['notificationTitle' => '  ', 'notificationText' => ''])
+            ->assertRedirect($this->host('notifiche'));
+
+        $this->assertSame(0, \App\Models\NotificaGenerale::count());
+    }
+
+    public function test_notifiche_broadcast_requires_admin(): void
+    {
+        $this->post($this->host('notifiche'), ['notificationTitle' => 'x', 'notificationText' => 'y'])
+            ->assertRedirect($this->host('login'));
+        $this->assertSame(0, \App\Models\NotificaGenerale::count());
+    }
+
     // ─── Creazione agenzia ───────────────────────────────────────────────
 
     public function test_create_agency_requires_logo(): void

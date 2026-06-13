@@ -20,7 +20,7 @@ final class LegacyRowSanitizer
     public const PROTECTED_TABLES = [
         'migrations', 'users', 'password_reset_tokens', 'sessions',
         'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs',
-        'scadenze_notificate',
+        'scadenze_notificate', 'refresh_tokens',
     ];
 
     /** Colonne DATETIME/DATE per tabella: '' → NULL. */

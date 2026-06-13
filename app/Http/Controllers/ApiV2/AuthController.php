@@ -8,6 +8,7 @@ use App\Mail\LegacyHtmlMail;
 use App\Models\AgenziaNew;
 use App\Models\Cliente;
 use App\Services\JwtService;
+use App\Services\RefreshTokenService;
 use App\Support\ApiResponse;
 use App\Support\LegacyText;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,7 +23,10 @@ use Illuminate\Support\Facades\Mail;
  */
 class AuthController extends V2Controller
 {
-    public function __construct(private readonly JwtService $jwt) {}
+    public function __construct(
+        private readonly JwtService $jwt,
+        private readonly RefreshTokenService $refresh,
+    ) {}
 
     /** Oggetto user nel formato/ordine esatto del login legacy. */
     public static function userPayload(Cliente $user, ?string $lastloginOverride = null): array
@@ -110,8 +114,58 @@ class AuthController extends V2Controller
         return ApiResponse::ok([
             'token' => $this->jwt->issueForUser((int) $user->id, ApiResponse::s($user->username), $agencyIdInt),
             'expires_in' => $this->jwt->expiry(),
+            'refresh_token' => $this->refresh->issue((int) $user->id, $agencyIdInt),
             'user' => $payload,
         ]);
+    }
+
+    // ─── POST auth/refresh.php ───────────────────────────────────────────
+
+    /**
+     * Rinnova il JWT a partire da un refresh token valido, senza credenziali.
+     * Rotazione one-time: il token presentato viene revocato e ne viene emesso
+     * uno nuovo. Permette all'app l'auto-login senza salvare la password.
+     */
+    public function refresh(Request $request): JsonResponse
+    {
+        $b = $this->jsonBody($request);
+        $presented = ApiResponse::s($b['refresh_token'] ?? '');
+
+        $row = $this->refresh->findValid($presented);
+        if ($row === null) {
+            return ApiResponse::err('Refresh token non valido o scaduto.', 'INVALID_REFRESH_TOKEN', 401);
+        }
+
+        $user = Cliente::find((int) $row->cliente_id);
+        if ($user === null || ApiResponse::s($user->active) !== '1') {
+            // Token valido ma account non utilizzabile: revoca e nega.
+            $this->refresh->revoke($row);
+
+            return ApiResponse::err('Account non disponibile.', 'ACCOUNT_INACTIVE', 403);
+        }
+
+        $this->refresh->revoke($row);
+        $agencyId = (int) $row->agency_id;
+
+        return ApiResponse::ok([
+            'token' => $this->jwt->issueForUser((int) $user->id, ApiResponse::s($user->username), $agencyId),
+            'expires_in' => $this->jwt->expiry(),
+            'refresh_token' => $this->refresh->issue((int) $user->id, $agencyId),
+        ]);
+    }
+
+    // ─── POST auth/logout.php ────────────────────────────────────────────
+
+    /** Revoca il refresh token (logout). Idempotente. */
+    public function logout(Request $request): JsonResponse
+    {
+        $b = $this->jsonBody($request);
+        $row = $this->refresh->findValid(ApiResponse::s($b['refresh_token'] ?? ''));
+        if ($row !== null) {
+            $this->refresh->revoke($row);
+        }
+
+        return ApiResponse::ok(['message' => 'Logout effettuato.']);
     }
 
     // ─── POST auth/register.php ──────────────────────────────────────────

@@ -24,6 +24,9 @@ return [
 
     'jwt_secret' => env('JWT_SECRET', ''),
     'jwt_expiry' => (int) env('JWT_EXPIRY', 2592000),
+    // Refresh token (auto-login senza salvare la password lato app): più
+    // longevo del JWT, a rotazione one-time. Default 90 giorni.
+    'refresh_expiry' => (int) env('REFRESH_EXPIRY', 7776000),
 
     /*
     |--------------------------------------------------------------------------
