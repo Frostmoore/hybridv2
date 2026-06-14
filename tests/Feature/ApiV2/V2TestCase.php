@@ -24,6 +24,7 @@ abstract class V2TestCase extends TestCase
             'denuncia_mail' => 'sinistri@test.it',
             'quick_email' => 'quick@test.it',
             'info_email_sedi' => 'info@test.it|info2@test.it',
+            'versione_app' => 'v2',
         ], $overrides));
     }
 

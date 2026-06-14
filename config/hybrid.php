@@ -86,4 +86,15 @@ return [
 
     'agency_assets_path' => env('AGENCY_ASSETS_PATH') ?: storage_path('app/agency-assets'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sync dal vecchio server (transizione v1 → v2)
+    |--------------------------------------------------------------------------
+    | Durante la migrazione il VECCHIO server inoltra a questo (nuovo) le
+    | aggiunte/modifiche di cliente/agenzia/notifica/operatore, autenticate con
+    | `sync_secret`. Direzione unica: solo vecchio → nuovo. Vedi critics.md.
+    */
+
+    'sync_secret' => env('SYNC_SECRET', ''),
+
 ];

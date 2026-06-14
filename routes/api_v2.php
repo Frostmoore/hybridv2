@@ -29,6 +29,9 @@ Route::prefix('res/api/v2')->group(function () {
     Route::post('auth/forgot-password.php', [AuthController::class, 'forgotPassword']);
     Route::get('notifications/general.php', [NotificationController::class, 'general']);
 
+    // Sync dal vecchio server (auth via secret nel controller, NO JWT)
+    Route::post('sync.php', [\App\Http\Controllers\ApiV2\SyncController::class, 'receive']);
+
     // ── Autenticati (Bearer JWT) ────────────────────────────────────────
     Route::middleware('auth.jwt')->group(function () {
         Route::match(['GET', 'PATCH'], 'user/me.php', [UserController::class, 'me']);

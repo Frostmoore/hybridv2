@@ -238,6 +238,29 @@ class CronCommandsTest extends V2TestCase
         $this->assertSame(1, \App\Models\ScadenzaNotificata::count());
     }
 
+    public function test_notifiche_skips_v1_agencies(): void
+    {
+        $this->fakeAssiEasyDetail();
+        // Agenzia ancora sulla vecchia app: il nuovo server NON deve notificarla
+        $agency = $this->makeAgency(['assiurl' => 't.assieasy.com', 'assisecret' => 's', 'versione_app' => 'v1']);
+        $cliente = $this->makeCliente($agency);
+
+        $dataEffetto = (new \DateTimeImmutable('today', new \DateTimeZone('Europe/Rome')))
+            ->modify('+15 days')->format('Y-m-d');
+        $this->scadenzeFile([
+            'cliente_id' => (int) $cliente->id, 'id_polizza' => '111',
+            'data_effetto_titolo' => $dataEffetto,
+            'os_app_id' => 'a', 'os_api_key' => 'k', 'playerid' => 'p',
+        ]);
+
+        $this->artisan('hybrid:scadenze-notifiche')
+            ->expectsOutputToContain('Push inviate: 0')
+            ->assertSuccessful();
+
+        $this->assertSame(0, Notifica::count());
+        Http::assertNotSent(fn ($r) => str_contains($r->url(), 'onesignal'));
+    }
+
     public function test_notifiche_skips_already_expired(): void
     {
         $this->fakeAssiEasyDetail();

@@ -57,6 +57,7 @@ class ScadenzeNotifiche extends Command
 
         $push = 0;
         $skip = 0;
+        $versioneApp = [];   // cache id_agenzia → versione_app
 
         foreach ($scadenze as $r) {
             $pid = (string) ($r['id_polizza'] ?? '?');
@@ -79,6 +80,16 @@ class ScadenzeNotifiche extends Command
             $agenziaId = (int) $cliente->agenziaid;
 
             if ($soloAgenzia !== null && $agenziaId !== $soloAgenzia) {
+                $skip++;
+
+                continue;
+            }
+
+            // Solo agenzie sulla nuova app (v2): le v1 le gestisce il vecchio server.
+            if (! array_key_exists($agenziaId, $versioneApp)) {
+                $versioneApp[$agenziaId] = (string) (AgenziaNew::where('id', $agenziaId)->value('versione_app') ?: 'v1');
+            }
+            if ($versioneApp[$agenziaId] !== 'v2') {
                 $skip++;
 
                 continue;
