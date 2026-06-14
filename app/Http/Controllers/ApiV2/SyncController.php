@@ -29,6 +29,17 @@ class SyncController extends Controller
         'operatore' => 'operatori',
     ];
 
+    /**
+     * Entità → colonna che identifica l'agenzia nei dati ricevuti. Serve a
+     * scartare gli upsert per agenzie già migrate a v2 (anti-clobber).
+     * `operatore` è assente: nel vecchio non porta contesto agenzia → mai filtrato.
+     */
+    private const AGENCY_KEY = [
+        'cliente' => 'agenziaid',
+        'agenzia' => 'id',
+        'notifica' => 'agenziaid',
+    ];
+
     public function receive(Request $request): JsonResponse
     {
         $secret = (string) config('hybrid.sync_secret');
@@ -54,6 +65,18 @@ class SyncController extends Controller
             return ApiResponse::err('Campo id obbligatorio.', 'VALIDATION_ERROR', 422);
         }
         unset($clean['id']);
+
+        // Anti-clobber: se l'agenzia di destinazione è già su v2, qui il nuovo
+        // server è autorevole → ignora l'upsert. Rispondiamo comunque 200 così il
+        // vecchio non accoda il record per il retry.
+        $agencyKey = self::AGENCY_KEY[$entity] ?? null;
+        if ($agencyKey !== null) {
+            $agencyId = $data[$agencyKey] ?? null;
+            if ($agencyId !== null && $agencyId !== ''
+                && strtolower((string) (DB::table('agenzie_new')->where('id', $agencyId)->value('versione_app') ?? 'v1')) === 'v2') {
+                return ApiResponse::ok(['entity' => $entity, 'id' => $id, 'synced' => false, 'skipped' => 'agency_v2']);
+            }
+        }
 
         // Upsert per id (idempotente). Query builder: imposta l'id esplicito,
         // bypassa il mass-assignment guard (sync raw vecchio → nuovo).

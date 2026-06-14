@@ -4,6 +4,7 @@ namespace Tests\Feature\ApiV2;
 
 use App\Models\Cliente;
 use App\Models\Operatore;
+use Illuminate\Support\Facades\DB;
 
 class SyncTest extends V2TestCase
 {
@@ -42,7 +43,7 @@ class SyncTest extends V2TestCase
 
     public function test_upserts_cliente_by_id(): void
     {
-        $agency = $this->makeAgency();
+        $agency = $this->makeAgency(['versione_app' => 'v1']);
 
         // INSERT con id esplicito (id "vecchio" < 1M)
         $this->postJson(self::URL, ['entity' => 'cliente', 'data' => [
@@ -63,6 +64,36 @@ class SyncTest extends V2TestCase
 
         $this->assertSame('nuova@old.it', Cliente::find(700)->email);
         $this->assertSame(1, Cliente::where('id', 700)->count());   // no doppioni
+    }
+
+    public function test_skips_upsert_when_agency_is_v2(): void
+    {
+        $agency = $this->makeAgency();
+        DB::table('agenzie_new')->where('id', $agency->id)->update(['versione_app' => 'v2']);
+
+        // cliente: scartato (il nuovo è autorevole), ma risposta 200 (no retry lato vecchio)
+        $this->postJson(self::URL, ['entity' => 'cliente', 'data' => [
+            'id' => 701, 'username' => 'tardo.vecchio', 'agenziaid' => $agency->id,
+        ]], $this->headers())
+            ->assertOk()
+            ->assertJsonPath('data.synced', false)
+            ->assertJsonPath('data.skipped', 'agency_v2');
+        $this->assertNull(Cliente::find(701));
+
+        // anche l'agenzia stessa non va sovrascritta quando è v2
+        $this->postJson(self::URL, ['entity' => 'agenzia', 'data' => [
+            'id' => $agency->id, 'nome_agenzia' => 'TENTATIVO CLOBBER',
+        ]], $this->headers())->assertOk()->assertJsonPath('data.synced', false);
+        $this->assertNotSame('TENTATIVO CLOBBER', DB::table('agenzie_new')->where('id', $agency->id)->value('nome_agenzia'));
+    }
+
+    public function test_syncs_when_agency_is_v1(): void
+    {
+        $agency = $this->makeAgency(['versione_app' => 'v1']);
+        $this->postJson(self::URL, ['entity' => 'cliente', 'data' => [
+            'id' => 702, 'username' => 'attivo.vecchio', 'agenziaid' => $agency->id,
+        ]], $this->headers())->assertOk()->assertJsonPath('data.synced', true);
+        $this->assertNotNull(Cliente::find(702));
     }
 
     public function test_upserts_operatore(): void
