@@ -56,6 +56,7 @@ Route::middleware('auth:admin')->group(function () {
     Route::post('agenzia', [\App\Http\Controllers\Web\AgencyAdminController::class, 'store']);
     Route::get('agenzia/{id}', [\App\Http\Controllers\Web\AgencyAdminController::class, 'edit'])->whereNumber('id');
     Route::post('agenzia/{id}', [\App\Http\Controllers\Web\AgencyAdminController::class, 'update'])->whereNumber('id');
+    Route::post('agenzia/{id}/elimina', [\App\Http\Controllers\Web\AgencyAdminController::class, 'destroy'])->whereNumber('id');
     // Back-compat coi vecchi path (redirect GET, alias POST)
     Route::get('creagenzia.php', fn () => redirect('/agenzia/nuova'));
     Route::get('agenzia.php', fn () => redirect('/agenzia/'.(int) request()->query('id')));

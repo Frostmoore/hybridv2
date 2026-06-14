@@ -22,7 +22,18 @@
             <h1>{{ $titolo }}</h1>
             <p>{{ $agenzia->exists ? 'Modifica la configurazione white-label dell\'agenzia.' : 'Configura una nuova agenzia white-label.' }}</p>
         </div>
-        <a href="{{ url('home') }}" class="adm-btn adm-btn--ghost"><i class="fas fa-arrow-left"></i> Torna alle agenzie</a>
+        <div style="display:flex; gap:10px;">
+            @if ($agenzia->exists)
+                <form method="post" action="{{ url('agenzia/'.$agenzia->id.'/elimina') }}"
+                      onsubmit="return confirm('Eliminare DEFINITIVAMENTE l\'agenzia «{{ $agenzia->nome_agenzia }}» e TUTTI i suoi dati (clienti, operatori, notifiche, sinistri, preventivi, documenti, polizze)?\n\nL\'azione è irreversibile.');">
+                    @csrf
+                    <button type="submit" class="adm-btn adm-btn--ghost" style="color:var(--adm-danger); border-color:#f1c4c4;">
+                        <i class="fas fa-trash"></i> Elimina
+                    </button>
+                </form>
+            @endif
+            <a href="{{ url('home') }}" class="adm-btn adm-btn--ghost"><i class="fas fa-arrow-left"></i> Torna alle agenzie</a>
+        </div>
     </div>
 
     @if (session('status'))
@@ -45,6 +56,16 @@
         @if ($agenzia->exists)
             <input type="hidden" name="id" value="{{ $agenzia->id }}">
         @endif
+
+        <div class="adm-field" style="max-width:300px; margin-bottom:18px;">
+            <label for="versione_app">Versione app <code>versione_app</code></label>
+            <select class="adm-input" id="versione_app" name="versione_app">
+                @foreach (AgencyAdminController::APP_VERSIONS as $v)
+                    <option value="{{ $v }}" {{ old('versione_app', $agenzia->versione_app ?: 'v1') === $v ? 'selected' : '' }}>{{ strtoupper($v) }}</option>
+                @endforeach
+            </select>
+            <small class="text-muted">v1 = vecchio server · v2 = nuovo. Le notifiche push del nuovo server vanno solo alle <strong>v2</strong>.</small>
+        </div>
 
         <div class="adm-form">
             {{-- Navigazione tab --}}

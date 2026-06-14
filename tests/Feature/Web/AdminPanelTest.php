@@ -347,6 +347,59 @@ class AdminPanelTest extends V2TestCase
         $this->assertSame(IMAGETYPE_JPEG, $info[2]);     // ricompressa JPEG
     }
 
+    public function test_update_sets_versione_app(): void
+    {
+        $admin = $this->admin();
+        $agenzia = $this->makeAgency(['versione_app' => 'v1']);
+
+        $this->actingAs($admin, 'admin')->post($this->host('agenzia/'.$agenzia->id), [
+            'nome_agenzia' => $agenzia->nome_agenzia, 'versione_app' => 'v2',
+        ])->assertRedirect($this->host('agenzia/'.$agenzia->id));
+
+        $this->assertSame('v2', $agenzia->fresh()->versione_app);
+
+        // valore non valido → ignorato (resta v2)
+        $this->actingAs($admin, 'admin')->post($this->host('agenzia/'.$agenzia->id), [
+            'nome_agenzia' => $agenzia->nome_agenzia, 'versione_app' => 'pirata',
+        ]);
+        $this->assertSame('v2', $agenzia->fresh()->versione_app);
+    }
+
+    public function test_home_shows_versione_badge(): void
+    {
+        $admin = $this->admin();
+        $this->makeAgency(['nome_agenzia' => 'Ag V2', 'token' => 'tv2', 'versione_app' => 'v2']);
+
+        $this->actingAs($admin, 'admin')->get($this->host('home'))
+            ->assertOk()
+            ->assertSee('Ag V2')
+            ->assertSee('V2');
+    }
+
+    public function test_destroy_agency_cascade(): void
+    {
+        $admin = $this->admin();
+        $agency = $this->makeAgency();
+        $cliente = $this->makeCliente($agency);
+        \App\Models\Notifica::create(['titolo' => 'x', 'contenuto' => 'y', 'destinatari' => 'a,', 'agenziaid' => $agency->id]);
+
+        $this->actingAs($admin, 'admin')
+            ->from($this->host('agenzia/'.$agency->id))
+            ->post($this->host('agenzia/'.$agency->id.'/elimina'))
+            ->assertRedirect($this->host('home'));
+
+        $this->assertDatabaseMissing('agenzie_new', ['id' => $agency->id]);
+        $this->assertDatabaseMissing('clienti', ['id' => $cliente->id]);
+        $this->assertSame(0, \App\Models\Notifica::where('agenziaid', $agency->id)->count());
+    }
+
+    public function test_destroy_requires_admin(): void
+    {
+        $agency = $this->makeAgency();
+        $this->post($this->host('agenzia/'.$agency->id.'/elimina'))->assertRedirect($this->host('login'));
+        $this->assertDatabaseHas('agenzie_new', ['id' => $agency->id]);
+    }
+
     public function test_update_rejects_non_png_image(): void
     {
         $admin = $this->admin();

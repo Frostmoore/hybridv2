@@ -9,6 +9,7 @@ use App\Models\AgenziaNew;
 use App\Support\ImageOptimizer;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -21,6 +22,9 @@ use Illuminate\Support\Facades\File;
  */
 class AgencyAdminController extends Controller
 {
+    /** Versioni app selezionabili (transizione vecchio→nuovo server). */
+    public const APP_VERSIONS = ['v1', 'v2'];
+
     /** Campi testuali editabili, raggruppati per sezione (per le viste). */
     public const FIELD_GROUPS = [
         'Identità app' => ['nome_app', 'nome_agenzia', 'colori', 'attiva', 'codiceagenzia', 'privacy_agenzia', 'denuncia_mail'],
@@ -69,10 +73,38 @@ class AgencyAdminController extends Controller
         $agenzia = AgenziaNew::findOrFail($id ?? (int) $request->input('id', 0));
 
         $agenzia->fill($this->textFields($request));
+        $this->applyVersione($request, $agenzia);
         $this->saveImages($request, $agenzia);
         $agenzia->save();
 
         return redirect('agenzia/'.$agenzia->id)->with('status', 'Agenzia aggiornata con successo.');
+    }
+
+    // ─── POST /agenzia/{id}/elimina (destroy) ────────────────────────────
+
+    public function destroy(int $id)
+    {
+        $agenzia = AgenziaNew::findOrFail($id);
+        $nome = (string) $agenzia->nome_agenzia;
+
+        // Cascata: l'agenzia e tutti i suoi dati collegati.
+        DB::transaction(function () use ($id) {
+            DB::table('clienti')->where('agenziaid', $id)->delete();
+            DB::table('operatori')->where('agid', $id)->delete();
+            DB::table('notifiche')->where('agenziaid', $id)->delete();
+            DB::table('notifiche_generali')->where('notifica_agid', $id)->delete();
+            DB::table('sinistri')->where('id_agenzia', $id)->delete();
+            DB::table('preventivi')->where('id_agenzia', $id)->delete();
+            DB::table('documenti')->where('id_agenzia', $id)->delete();
+            DB::table('polizze')->where('id_agenzia', $id)->delete();
+            DB::table('polizze_importate')->where('id_agenzia', $id)->delete();
+            DB::table('agenzie_new')->where('id', $id)->delete();
+        });
+
+        // Rimuovi anche la cartella immagini dell'agenzia
+        File::deleteDirectory(config('hybrid.agency_assets_path').'/img/'.$id);
+
+        return redirect('home')->with('status', 'Agenzia «'.$nome.'» eliminata con tutti i suoi dati.');
     }
 
     // ─── GET /agenzia/nuova (create) ─────────────────────────────────────
@@ -96,6 +128,7 @@ class AgencyAdminController extends Controller
         }
 
         $agenzia = new AgenziaNew($this->textFields($request));
+        $this->applyVersione($request, $agenzia);
         $agenzia->token = $this->generateToken();     // 10 char alfanumerici (legacy)
         if ((string) $agenzia->attiva === '') {
             $agenzia->attiva = '1';
@@ -109,6 +142,15 @@ class AgencyAdminController extends Controller
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────
+
+    /** Imposta versione_app solo se è un valore valido (v1/v2). */
+    private function applyVersione(Request $request, AgenziaNew $agenzia): void
+    {
+        $v = (string) $request->input('versione_app', '');
+        if (in_array($v, self::APP_VERSIONS, true)) {
+            $agenzia->versione_app = $v;
+        }
+    }
 
     /** @return array<string, string> */
     private function textFields(Request $request): array

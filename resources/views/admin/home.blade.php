@@ -24,8 +24,11 @@
 
     <div class="adm-grid" id="admGrid">
         @foreach ($agenzie as $agenzia)
-            @php $attiva = (string) $agenzia->attiva === '1'; @endphp
-            <article class="adm-card" data-search="{{ Str::lower($agenzia->nome_agenzia . ' ' . $agenzia->id . ' ' . $agenzia->token) }}">
+            @php
+                $attiva = (string) $agenzia->attiva === '1';
+                $versione = strtoupper($agenzia->versione_app ?: 'v1');
+            @endphp
+            <article class="adm-card" data-search="{{ Str::lower($agenzia->nome_agenzia . ' ' . $agenzia->id . ' ' . $agenzia->token . ' ' . $versione) }}">
                 <div class="adm-card__top">
                     @if ($agenzia->logo_agenzia && $agenzia->logo_agenzia !== 'placeholder')
                         <img class="adm-card__logo" src="{{ url('res/' . $agenzia->logo_agenzia) }}" alt=""
@@ -36,10 +39,15 @@
                     @endif
                     <div>
                         <h2 class="adm-card__name">{{ $agenzia->nome_agenzia ?: '(senza nome)' }}</h2>
-                        <span class="adm-badge {{ $attiva ? 'adm-badge--on' : 'adm-badge--off' }}">
-                            <i class="fas {{ $attiva ? 'fa-circle-check' : 'fa-circle-pause' }}"></i>
-                            {{ $attiva ? 'Attiva' : 'Sospesa' }}
-                        </span>
+                        <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                            <span class="adm-badge {{ $attiva ? 'adm-badge--on' : 'adm-badge--off' }}">
+                                <i class="fas {{ $attiva ? 'fa-circle-check' : 'fa-circle-pause' }}"></i>
+                                {{ $attiva ? 'Attiva' : 'Sospesa' }}
+                            </span>
+                            <span class="adm-badge {{ $versione === 'V2' ? 'adm-badge--on' : 'adm-badge--off' }}" title="Versione app">
+                                <i class="fas fa-mobile-screen"></i> {{ $versione }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
