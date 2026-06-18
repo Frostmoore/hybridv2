@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'auth.jwt' => \App\Http\Middleware\AuthenticateJwt::class,
             'operatore.timeout' => \App\Http\Middleware\OperatoreSessionTimeout::class,
+            'agencies.superadmin' => \App\Http\Middleware\AgenciesSuperAdmin::class,
         ]);
 
         // Ospiti non autenticati → /login (entrambi i domini hanno questa route,

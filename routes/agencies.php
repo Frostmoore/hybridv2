@@ -35,12 +35,14 @@ Route::middleware(['auth:operatore', 'operatore.timeout'])->group(function () {
     Route::get('utenti', [AgenciesPanelController::class, 'utenti']);
     Route::get('export-utenti', [AgenciesPanelController::class, 'exportUtenti']);
 
-    // Gestione operatori (la pagina operatori è gated super-admin nel controller)
-    Route::get('operatori', [AgenciesPanelController::class, 'operators']);
-    Route::get('operatori/nuovo', [AgenciesPanelController::class, 'addOperator']);
-    Route::post('api/v1/addop.php', [OperatorApiController::class, 'store']);
-    Route::post('api/v1/activate_operator.php', [OperatorApiController::class, 'activate']);
-    Route::post('api/v1/update_agenzia.php', [OperatorApiController::class, 'updateAgenzia']);
+    // Gestione operatori — SOLO super-admin (config hybrid.agencies_superadmins)
+    Route::middleware('agencies.superadmin')->group(function () {
+        Route::get('operatori', [AgenciesPanelController::class, 'operators']);
+        Route::get('operatori/nuovo', [AgenciesPanelController::class, 'addOperator']);
+        Route::post('api/v1/addop.php', [OperatorApiController::class, 'store']);
+        Route::post('api/v1/activate_operator.php', [OperatorApiController::class, 'activate']);
+        Route::post('api/v1/update_agenzia.php', [OperatorApiController::class, 'updateAgenzia']);
+    });
 
     // Notifiche
     Route::get('notifiche/tutti', [AgenciesNotificationController::class, 'pageAll']);

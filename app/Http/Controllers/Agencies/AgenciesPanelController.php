@@ -101,16 +101,10 @@ class AgenciesPanelController extends Controller
         return $datetime ? "$esito - $datetime" : $esito;
     }
 
-    // ─── operators.php (solo super-admin) ────────────────────────────────
+    // ─── operators.php (solo super-admin, gated dal middleware) ──────────
 
     public function operators()
     {
-        /** @var Operatore $operatore */
-        $operatore = Auth::guard('operatore')->user();
-        if (! in_array($operatore->username, config('hybrid.agencies_superadmins'), true)) {
-            return redirect('home');   // come il legacy
-        }
-
         return view('agencies.operators', [
             'operatori' => Operatore::orderBy('id')->get(),
             'agenzie' => AgenziaNew::orderBy('nome_agenzia')->get(['id', 'nome_agenzia']),
