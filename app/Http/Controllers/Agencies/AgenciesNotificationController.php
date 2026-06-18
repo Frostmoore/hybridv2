@@ -57,6 +57,54 @@ class AgenciesNotificationController extends Controller
         ];
     }
 
+    // ─── Inviate: elenco + gestione ──────────────────────────────────────
+
+    public function pageSent()
+    {
+        $operatore = Auth::guard('operatore')->user();
+        $agid = (int) $operatore->agid;
+
+        return view('agencies.notification_sent', [
+            'operatore' => $operatore,
+            'agid' => $agid,
+            'generali' => NotificaGenerale::where('notifica_agid', $agid)->orderByDesc('id')->get(),
+            'mirate' => Notifica::where('agenziaid', $agid)->orderByDesc('id')->get(),
+        ]);
+    }
+
+    public function deleteGenerale(int $id)
+    {
+        $agid = (int) Auth::guard('operatore')->user()->agid;
+        NotificaGenerale::where('id', $id)->where('notifica_agid', $agid)->delete();
+
+        return redirect('/notifiche/inviate')->with('status', 'Notifica generale eliminata.');
+    }
+
+    public function deleteMirata(int $id)
+    {
+        $agid = (int) Auth::guard('operatore')->user()->agid;
+        Notifica::where('id', $id)->where('agenziaid', $agid)->delete();
+
+        return redirect('/notifiche/inviate')->with('status', 'Notifica eliminata.');
+    }
+
+    public function updateScadenza(Request $request, int $id)
+    {
+        $agid = (int) Auth::guard('operatore')->user()->agid;
+        $scadenza = str_replace('T', ' ', trim((string) $request->input('notifica_scadenza', '')));
+
+        if (! preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $scadenza)) {
+            return redirect('/notifiche/inviate')->with('status', 'Scadenza non valida.');
+        }
+        if (strlen($scadenza) === 16) {
+            $scadenza .= ':00';
+        }
+        NotificaGenerale::where('id', $id)->where('notifica_agid', $agid)
+            ->update(['notifica_scadenza' => $scadenza]);
+
+        return redirect('/notifiche/inviate')->with('status', 'Scadenza aggiornata.');
+    }
+
     // ─── POST api/v1/send_notification_all.php ───────────────────────────
 
     public function sendAll(Request $request)

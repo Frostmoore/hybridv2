@@ -46,6 +46,10 @@ Route::middleware(['auth:operatore', 'operatore.timeout'])->group(function () {
     Route::get('notifiche/tutti', [AgenciesNotificationController::class, 'pageAll']);
     Route::get('notifiche/privata', [AgenciesNotificationController::class, 'pagePrivate']);
     Route::get('notifiche/selezionati', [AgenciesNotificationController::class, 'pageSelected']);
+    Route::get('notifiche/inviate', [AgenciesNotificationController::class, 'pageSent']);
+    Route::post('notifiche/generale/{id}/elimina', [AgenciesNotificationController::class, 'deleteGenerale'])->whereNumber('id');
+    Route::post('notifiche/mirata/{id}/elimina', [AgenciesNotificationController::class, 'deleteMirata'])->whereNumber('id');
+    Route::post('notifiche/generale/{id}/scadenza', [AgenciesNotificationController::class, 'updateScadenza'])->whereNumber('id');
     Route::post('api/v1/send_notification_all.php', [AgenciesNotificationController::class, 'sendAll']);
     Route::post('api/v1/send_notification_private.php', [AgenciesNotificationController::class, 'sendPrivate']);
     Route::post('api/v1/send_notification_selected.php', [AgenciesNotificationController::class, 'sendSelected']);
