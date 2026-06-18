@@ -73,6 +73,8 @@ Route::middleware('auth:admin')->group(function () {
     // Notifiche admin: broadcast globale a TUTTI gli utenti del sistema
     Route::get('notifiche', [\App\Http\Controllers\Web\AdminNotificationController::class, 'page']);
     Route::post('notifiche', [\App\Http\Controllers\Web\AdminNotificationController::class, 'broadcast']);
+    Route::post('notifiche/elimina', [\App\Http\Controllers\Web\AdminNotificationController::class, 'deleteBroadcast']);
+    Route::post('notifiche/scadenza', [\App\Http\Controllers\Web\AdminNotificationController::class, 'updateBroadcastScadenza']);
     Route::get('notifiche.php', fn () => redirect('/notifiche'));
 
     // Utenti (tutte le agenzie): elenco, attivazione, invio reset password

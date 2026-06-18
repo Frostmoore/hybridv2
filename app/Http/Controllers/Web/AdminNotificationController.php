@@ -31,7 +31,58 @@ class AdminNotificationController extends Controller
 
     public function page()
     {
-        return view('admin.notifiche');
+        // Le NotificaGenerale dello stesso broadcast hanno titolo+testo+scadenza
+        // identici (una per agenzia). Le raggruppo per mostrarle come un solo invio.
+        $broadcasts = NotificaGenerale::orderByDesc('id')->get()
+            ->groupBy(fn ($n) => $n->notifica_titolo.'|||'.$n->notifica_testo.'|||'.$n->notifica_scadenza)
+            ->map(fn ($g) => (object) [
+                'id' => $g->first()->id,   // record rappresentativo del gruppo
+                'titolo' => $g->first()->notifica_titolo,
+                'testo' => $g->first()->notifica_testo,
+                'scadenza' => $g->first()->notifica_scadenza,
+                'agenzie' => $g->count(),
+            ])
+            ->values();
+
+        return view('admin.notifiche', ['broadcasts' => $broadcasts]);
+    }
+
+    /** Elimina tutte le NotificaGenerale di un broadcast (gruppo). */
+    public function deleteBroadcast(Request $request)
+    {
+        $n = $this->matchQuery($request)->delete();
+
+        return redirect('notifiche')->with('status', "Broadcast eliminato ($n notifiche rimosse).");
+    }
+
+    /** Aggiorna la scadenza di tutte le NotificaGenerale di un broadcast. */
+    public function updateBroadcastScadenza(Request $request)
+    {
+        $scadenza = str_replace('T', ' ', trim((string) $request->input('nuova_scadenza', '')));
+        if (! preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/', $scadenza)) {
+            return redirect('notifiche')->with('status', 'Scadenza non valida.');
+        }
+        if (strlen($scadenza) === 16) {
+            $scadenza .= ':00';
+        }
+        $n = $this->matchQuery($request)->update(['notifica_scadenza' => $scadenza]);
+
+        return redirect('notifiche')->with('status', "Scadenza aggiornata ($n notifiche).");
+    }
+
+    /** Query che identifica un broadcast: stesso titolo+testo+scadenza. */
+    private function matchQuery(Request $request)
+    {
+        $ref = NotificaGenerale::find((int) $request->input('ref_id'));
+        if ($ref === null) {
+            return NotificaGenerale::whereRaw('1 = 0');   // gruppo non trovato
+        }
+        $q = NotificaGenerale::where('notifica_titolo', $ref->notifica_titolo)
+            ->where('notifica_testo', $ref->notifica_testo);
+
+        return $ref->notifica_scadenza === null
+            ? $q->whereNull('notifica_scadenza')
+            : $q->where('notifica_scadenza', $ref->notifica_scadenza);
     }
 
     public function broadcast(Request $request)

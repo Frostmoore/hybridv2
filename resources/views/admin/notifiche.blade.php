@@ -43,4 +43,63 @@
             <button type="submit" class="adm-btn adm-btn--primary"><i class="fas fa-paper-plane"></i> Invia a tutti</button>
         </form>
     </div>
+
+    {{-- ── Storico broadcast (raggruppati per contenuto) ── --}}
+    <div class="adm-block">
+        <h2 class="adm-panel__title">Broadcast inviati</h2>
+        <p class="adm-panel__hint">Un broadcast genera una notifica generale per ogni agenzia: qui sono raggruppati per contenuto.</p>
+
+        @if ($broadcasts->isEmpty())
+            <p class="text-muted">Nessun broadcast inviato.</p>
+        @else
+            <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:14px;">
+                <thead>
+                    <tr style="text-align:left; border-bottom:1px solid #e3e6ea; color:#888;">
+                        <th style="padding:8px;">Titolo</th>
+                        <th style="padding:8px;">Testo</th>
+                        <th style="padding:8px;">Agenzie</th>
+                        <th style="padding:8px;">Stato</th>
+                        <th style="padding:8px;">Scadenza</th>
+                        <th style="padding:8px; text-align:right;">Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($broadcasts as $b)
+                        @php $attivo = $b->scadenza && \Carbon\Carbon::parse($b->scadenza)->isFuture(); @endphp
+                        <tr style="border-bottom:1px solid #f0f2f4;">
+                            <td style="padding:8px; font-weight:600;">{{ $b->titolo ?: '—' }}</td>
+                            <td style="padding:8px; color:#555;">{{ \Illuminate\Support\Str::limit($b->testo, 70) ?: '—' }}</td>
+                            <td style="padding:8px;"><span class="adm-badge adm-badge--off"><i class="fas fa-building"></i> {{ $b->agenzie }}</span></td>
+                            <td style="padding:8px;">
+                                <span class="adm-badge {{ $attivo ? 'adm-badge--on' : 'adm-badge--off' }}">
+                                    <i class="fas {{ $attivo ? 'fa-circle-check' : 'fa-circle-pause' }}"></i> {{ $attivo ? 'Attivo' : 'Scaduto' }}
+                                </span>
+                            </td>
+                            <td style="padding:8px;">
+                                <form method="post" action="{{ url('notifiche/scadenza') }}" style="display:flex; gap:4px; align-items:center;">
+                                    @csrf
+                                    <input type="hidden" name="ref_id" value="{{ $b->id }}">
+                                    <input type="datetime-local" name="nuova_scadenza" class="adm-input" style="padding:4px 6px; width:auto;"
+                                           value="{{ $b->scadenza ? \Carbon\Carbon::parse($b->scadenza)->format('Y-m-d\TH:i') : '' }}">
+                                    <button type="submit" class="adm-btn adm-btn--ghost" title="Aggiorna scadenza (tutte le agenzie)"><i class="fas fa-clock"></i></button>
+                                </form>
+                            </td>
+                            <td style="padding:8px; text-align:right;">
+                                <form method="post" action="{{ url('notifiche/elimina') }}" style="display:inline;"
+                                      onsubmit="return confirm('Eliminare il broadcast «{{ $b->titolo }}» da tutte le {{ $b->agenzie }} agenzie?');">
+                                    @csrf
+                                    <input type="hidden" name="ref_id" value="{{ $b->id }}">
+                                    <button type="submit" class="adm-btn adm-btn--ghost" style="color:var(--adm-danger); border-color:#f1c4c4;">
+                                        <i class="fas fa-trash"></i> Elimina
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            </div>
+        @endif
+    </div>
 @endsection
