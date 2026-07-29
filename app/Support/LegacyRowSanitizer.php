@@ -21,6 +21,9 @@ final class LegacyRowSanitizer
         'migrations', 'users', 'password_reset_tokens', 'sessions',
         'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs',
         'scadenze_notificate', 'refresh_tokens',
+        // Feature speciali per-agenzia: non esistono nel legacy e un import
+        // che le truncasse azzererebbe le configurazioni fatte a mano.
+        'agenzie_speciale', 'consulenze',
     ];
 
     /** Colonne DATETIME/DATE per tabella: '' → NULL. */

@@ -18,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
             // API v2: nessuna sessione/CSRF, path identici al legacy.
             Route::group([], base_path('routes/api_v2.php'));
 
+            // Endpoint speciali per singole agenzie (fuori contratto v2).
+            Route::group([], base_path('routes/api_v2_custom.php'));
+
             // Pannello agenzie (sottodominio) — registrato PRIMA del dominio
             // principale così le route di agencies vincono sul suo host.
             Route::domain(config('hybrid.domain_agencies'))

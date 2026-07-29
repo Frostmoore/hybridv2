@@ -14,6 +14,9 @@
     $sectionIcons = ['fa-id-card', 'fa-share-nodes', 'fa-location-dot', 'fa-bullhorn',
         'fa-phone-volume', 'fa-car-burst', 'fa-file-invoice-dollar', 'fa-folder-open',
         'fa-bolt', 'fa-plug'];
+
+    // Feature speciali: la riga esiste solo se già salvata almeno una volta
+    $speciale = $agenzia->exists ? $agenzia->speciale : null;
 @endphp
 
 @section('content')
@@ -79,6 +82,9 @@
                 <button type="button" class="adm-tab" data-tab="secImg">
                     <i class="fas fa-image"></i> Immagini
                 </button>
+                <button type="button" class="adm-tab" data-tab="secSpec">
+                    <i class="fas fa-wand-magic-sparkles"></i> Speciale
+                </button>
             </nav>
 
             {{-- Pannelli --}}
@@ -133,6 +139,43 @@
                     </div>
                 </section>
 
+                {{-- Speciale: feature fuori contratto, una per agenzia --}}
+                <section class="adm-panel" id="secSpec" role="tabpanel">
+                    <h2 class="adm-panel__title">Speciale</h2>
+                    <p class="adm-panel__hint">
+                        Implementazioni <strong>fuori standard</strong> concordate con singole agenzie.
+                        Attivarle richiede una build dedicata dell'app: non toccare se non sai di cosa si tratta.
+                    </p>
+
+                    {{-- Marcatore: distingue "form inviato con checkbox non spuntata"
+                         da "richiesta che non contiene affatto questa tab" --}}
+                    <input type="hidden" name="speciale_form" value="1">
+
+                    @foreach (AgencyAdminController::SPECIAL_FEATURES as $chiave => $feature)
+                        @php $attivo = (bool) old($feature['flag'], $speciale->{$feature['flag']} ?? false); @endphp
+                        <div class="adm-spec" data-feature="{{ $chiave }}" style="border:1px solid var(--adm-line, #e6e6e6); border-radius:12px; padding:16px; margin-bottom:14px;">
+                            <div class="pub-check" style="display:flex; align-items:center; gap:10px;">
+                                <input type="checkbox" id="{{ $feature['flag'] }}" name="{{ $feature['flag'] }}"
+                                       value="1" {{ $attivo ? 'checked' : '' }}>
+                                <label for="{{ $feature['flag'] }}" style="margin:0; font-weight:600;">
+                                    {{ $feature['label'] }} <code>{{ $feature['flag'] }}</code>
+                                </label>
+                            </div>
+                            <p class="adm-panel__hint" style="margin:8px 0 14px;">{{ $feature['descrizione'] }}</p>
+                            <div class="adm-fieldgrid adm-spec__fields" style="{{ $attivo ? '' : 'opacity:.5;' }}">
+                                @foreach ($feature['campi'] as $campo => $meta)
+                                    <div class="adm-field">
+                                        <label for="{{ $campo }}">{{ $meta['label'] }} <code>{{ $campo }}</code></label>
+                                        <input type="text" class="adm-input" id="{{ $campo }}" name="{{ $campo }}"
+                                               value="{{ old($campo, $speciale->{$campo} ?? '') }}">
+                                        <small class="text-muted">{{ $meta['hint'] }}</small>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endforeach
+                </section>
+
                 <div class="adm-formbar">
                     <a href="{{ url('home') }}" class="adm-btn adm-btn--ghost">Annulla</a>
                     <button type="submit" class="adm-btn adm-btn--primary">
@@ -155,6 +198,17 @@
             this.classList.add('is-active');
             document.getElementById(this.dataset.tab)?.classList.add('is-active');
         }));
+
+        // Tab Speciale: i campi di una feature spenta si sbiadiscono, ma NON si
+        // disabilitano — gli input disabled non vengono inviati e il loro
+        // contenuto andrebbe perso al primo salvataggio con il flag off.
+        document.querySelectorAll('.adm-spec').forEach(box => {
+            const flag = box.querySelector('input[type=checkbox]');
+            const fields = box.querySelector('.adm-spec__fields');
+            flag?.addEventListener('change', () => {
+                fields.style.opacity = flag.checked ? '' : '.5';
+            });
+        });
     })();
 </script>
 @endpush

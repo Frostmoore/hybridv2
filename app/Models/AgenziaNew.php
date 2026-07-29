@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Configurazione white-label di un'agenzia (tabella `agenzie_new`).
@@ -28,5 +29,16 @@ class AgenziaNew extends Model
     public function notificheGenerali(): HasMany
     {
         return $this->hasMany(NotificaGenerale::class, 'notifica_agid');
+    }
+
+    /**
+     * Feature fuori contratto attive per questa agenzia (tab "Speciale").
+     * Può essere null: la riga si crea solo al primo salvataggio.
+     *
+     * @return HasOne<AgenziaSpeciale, $this>
+     */
+    public function speciale(): HasOne
+    {
+        return $this->hasOne(AgenziaSpeciale::class, 'id_agenzia');
     }
 }

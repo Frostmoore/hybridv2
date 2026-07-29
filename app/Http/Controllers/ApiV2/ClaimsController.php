@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\ApiV2;
 
-use App\Mail\LegacyHtmlMail;
+use App\Http\Controllers\ApiV2\Concerns\HandlesClaimSubmissions;
 use App\Models\AgenziaNew;
 use App\Models\Documento;
 use App\Models\Preventivo;
@@ -14,19 +14,20 @@ use App\Support\LegacyRowSanitizer;
 use App\Support\LegacyText;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
-use ZipArchive;
 
 /**
  * Porting di legacy res/api/v2/claims/{sinistro,preventivo,documento}.php.
  * Multipart: payload JSON nel campo POST `data`, allegati come file separati.
  * Gli ZIP vanno in storage/app/private/uploads/{sinistri,preventivi,documenti}
  * (il legacy usava res/api/v2/uploads/, mai esposti via URL).
+ *
+ * dataPayload/buildZip/sendClaimMail/agencyMail vivono in
+ * HandlesClaimSubmissions: sono condivisi con gli endpoint custom.
  */
 class ClaimsController extends V2Controller
 {
+    use HandlesClaimSubmissions;
+
     // ─── POST claims/sinistro.php ────────────────────────────────────────
 
     public function sinistro(Request $request): JsonResponse
@@ -275,80 +276,5 @@ class ClaimsController extends V2Controller
         );
 
         return ApiResponse::ok(['message' => 'Documento inviato con successo.'], 201);
-    }
-
-    // ─── Helpers ─────────────────────────────────────────────────────────
-
-    /**
-     * Email destinataria per un'agenzia e un tipo ('denuncia'|'preventivo'):
-     * usa l'override di config se presente, altrimenti il valore dal DB.
-     * Sostituisce gli `if ($agencyId === 17)` hardcoded del legacy (critics.md).
-     */
-    private function agencyMail(int $agencyId, string $kind, mixed $fallback): string
-    {
-        $override = config("hybrid.agency_mail_overrides.$agencyId.$kind");
-
-        return LegacyText::normalizeEmail($override ?? $fallback);
-    }
-
-    /** @return array<string, mixed>|null */
-    private function dataPayload(Request $request): ?array
-    {
-        $raw = (string) $request->input('data', '{}');
-        $decoded = json_decode($raw, true);
-
-        return is_array($decoded) ? $decoded : null;
-    }
-
-    /**
-     * Crea lo ZIP con gli allegati richiesti (come zip_name/add_file_to_zip).
-     * Ritorna il path RELATIVO allo storage locale, o false se lo ZIP non si apre.
-     *
-     * @param  array<string, string>  $entries  campo file → nome entry (senza estensione)
-     */
-    private function buildZip(Request $request, string $subdir, string $label, array $entries): string|false
-    {
-        $relative = 'uploads/'.$subdir.'/'.date('Ymd').'-'.$label.'-'.bin2hex(random_bytes(4)).'.zip';
-        $absolute = Storage::path($relative);
-
-        $dir = dirname($absolute);
-        if (! is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
-
-        $zip = new ZipArchive;
-        if ($zip->open($absolute, ZipArchive::CREATE) !== true) {
-            return false;
-        }
-
-        foreach ($entries as $field => $entryName) {
-            $file = $request->file($field);
-            if ($file instanceof UploadedFile && $file->isValid()) {
-                $ext = $file->getClientOriginalExtension();
-                $zip->addFile($file->getRealPath(), $entryName.($ext !== '' ? '.'.$ext : ''));
-            }
-        }
-        $zip->close();
-
-        return $relative;
-    }
-
-    /** Invio non bloccante, come il legacy. */
-    private function sendClaimMail(string $to, string $fromName, string $subject, string $body, string $zipPath): void
-    {
-        if ($to === '') {
-            return;
-        }
-
-        try {
-            Mail::to($to)->send(new LegacyHtmlMail(
-                subjectLine: $subject,
-                htmlBody: $body,
-                fromName: $fromName,
-                attachmentPath: $zipPath !== '' ? Storage::path($zipPath) : null,
-            ));
-        } catch (\Throwable) {
-            // non bloccante
-        }
     }
 }

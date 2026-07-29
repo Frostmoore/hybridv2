@@ -39,6 +39,27 @@ class AgencyAdminController extends Controller
         'Servizi esterni' => ['assisecret', 'assiurl', 'sintesi_token', 'sintesi_lic', 'sintesi_azi', 'sintesi_age', 'os_app_id', 'os_api_key', 'token_interno'],
     ];
 
+    /**
+     * Feature FUORI CONTRATTO attivabili per singola agenzia (tab "Speciale",
+     * tabella `agenzie_speciale`). Aggiungerne una = una voce qui: la tab si
+     * disegna da questo array e il salvataggio ne segue le chiavi.
+     *
+     * `flag` = colonna boolean dell'interruttore, `campi` = colonne di testo
+     * collegate (chiave = colonna, valore = label + hint per il form).
+     */
+    public const SPECIAL_FEATURES = [
+        'consulenza' => [
+            'label' => 'Richiesta di consulenza',
+            'flag' => 'consulenza_attiva',
+            'descrizione' => 'Aggiunge nell\'app la card «Richiedi una Consulenza» sopra i Servizi e abilita l\'endpoint claims/consulenza.php (stessi campi del preventivo più data e ora dell\'appuntamento). Richiede una build dedicata dell\'app.',
+            'campi' => [
+                'consulenza_titolo' => ['label' => 'Titolo della card', 'hint' => 'Es. «Richiedi una Consulenza»'],
+                'consulenza_testo' => ['label' => 'Sottotitolo della card', 'hint' => 'Es. «Prenota un appuntamento con un consulente»'],
+                'consulenza_mail' => ['label' => 'Email destinataria', 'hint' => 'Se vuota si usa la stessa dei preventivi'],
+            ],
+        ],
+    ];
+
     /** Campi immagine PNG (nome campo = nome file come il legacy). */
     public const IMAGE_FIELDS = [
         'logo_agenzia', 'header_agenzia', 'info_immagine', 'contatti_immagine',
@@ -76,6 +97,7 @@ class AgencyAdminController extends Controller
         $this->applyVersione($request, $agenzia);
         $this->saveImages($request, $agenzia);
         $agenzia->save();
+        $this->saveSpeciale($request, $agenzia);
 
         return redirect('agenzia/'.$agenzia->id)->with('status', 'Agenzia aggiornata con successo.');
     }
@@ -98,6 +120,8 @@ class AgencyAdminController extends Controller
             DB::table('documenti')->where('id_agenzia', $id)->delete();
             DB::table('polizze')->where('id_agenzia', $id)->delete();
             DB::table('polizze_importate')->where('id_agenzia', $id)->delete();
+            DB::table('consulenze')->where('id_agenzia', $id)->delete();
+            DB::table('agenzie_speciale')->where('id_agenzia', $id)->delete();
             DB::table('agenzie_new')->where('id', $id)->delete();
         });
 
@@ -137,6 +161,7 @@ class AgencyAdminController extends Controller
 
         $this->saveImages($request, $agenzia);
         $agenzia->save();
+        $this->saveSpeciale($request, $agenzia);
 
         return redirect('home')->with('status', 'Agenzia "'.$agenzia->nome_agenzia.'" creata con ID '.$agenzia->id.'.');
     }
@@ -150,6 +175,35 @@ class AgencyAdminController extends Controller
         if (in_array($v, self::APP_VERSIONS, true)) {
             $agenzia->versione_app = $v;
         }
+    }
+
+    /**
+     * Salva la tab "Speciale" (tabella `agenzie_speciale`, riga creata on-demand).
+     *
+     * Due trappole disinnescate qui:
+     *  1. Una checkbox NON spuntata non viene inviata dal browser: usando il
+     *     `$request->has()` del resto del form sarebbe stato impossibile
+     *     SPEGNERE un flag. Si scrive sempre il boolean, mai "invariato".
+     *  2. L'alias legacy `res/updateagenzia.php` può essere chiamato da form che
+     *     non contengono la tab: senza il marcatore `speciale_form` la funzione
+     *     esce senza toccare nulla, così non azzera configurazioni esistenti.
+     */
+    private function saveSpeciale(Request $request, AgenziaNew $agenzia): void
+    {
+        if (! $request->has('speciale_form')) {
+            return;
+        }
+
+        $values = [];
+        foreach (self::SPECIAL_FEATURES as $feature) {
+            $values[$feature['flag']] = $request->boolean($feature['flag']);
+            foreach (array_keys($feature['campi']) as $campo) {
+                $values[$campo] = trim((string) $request->input($campo, ''));
+            }
+        }
+
+        // Relazione hasOne: la ricerca è già vincolata a id_agenzia
+        $agenzia->speciale()->updateOrCreate([], $values);
     }
 
     /** @return array<string, string> */
