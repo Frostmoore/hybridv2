@@ -49,6 +49,12 @@ In alternativa, vhost Apache/XAMPP puntati a `public/` con `ServerName` corrispo
   `routes/api_v2.php` (nessuna sessione/CSRF, path legacy con suffisso `.php`),
   `routes/agencies.php` (dominio agencies, middleware web),
   `routes/main.php` (dominio principale, middleware web).
+- **`www.` → apex** — `App\Http\Middleware\RedirectWwwToApex` (middleware globale,
+  gira prima del routing). I gruppi `Route::domain(...)` confrontano l'host alla
+  lettera, quindi senza redirect ogni pagina web su `www.<dominio>` risponde 404.
+  Le route API sono **escluse** di proposito: rispondono già su qualsiasi host e
+  le app pubblicate le chiamano su `www.` (redirigere le POST le romperebbe).
+  Copertura: `tests/Feature/Web/WwwRedirectTest.php`.
 - **Contratto API v2** — identico al legacy: wrapper `{"success":…}`,
   `App\Support\ApiResponse` (`ok()/err()/s()`), errori 404/405/500 in JSON
   (exception handler in `bootstrap/app.php`).

@@ -34,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Prima del routing: le pagine web sono vincolate all'host esatto, quindi
+        // `www.` va tolto qui o si prende un 404 (le route API sono escluse).
+        $middleware->prepend(\App\Http\Middleware\RedirectWwwToApex::class);
+
         $middleware->alias([
             'auth.jwt' => \App\Http\Middleware\AuthenticateJwt::class,
             'operatore.timeout' => \App\Http\Middleware\OperatoreSessionTimeout::class,
