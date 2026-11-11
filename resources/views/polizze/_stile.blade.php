@@ -486,4 +486,11 @@
 
     .pol-usata i { color: #9aa1b1; font-size: .7rem; }
     .pol-usata b { font-weight: 700; }
+
+    .pol-hint {
+        margin: 9px 0 0;
+        color: var(--adm-muted);
+        font-size: .83rem;
+        line-height: 1.55;
+    }
 </style>

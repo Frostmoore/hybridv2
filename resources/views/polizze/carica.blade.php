@@ -1,12 +1,22 @@
-{{-- Passo 1 dell'import polizze nel pannello agenzie: scelta del file.
-     L'agenzia di destinazione non si chiede: e' quella dell'operatore.
- --}}
-@extends('layouts.agencies')
+{{-- Passo 1 dell'import polizze: scelta del file.
 
-@section('title', 'Polizze')
+     Una pagina sola per due pannelli. Cambia una cosa, e la decide il
+     controller passando `$agenzie`:
+
+     - **null** (pannello agenzie) — l'agenzia e' quella dell'operatore in
+       sessione e non si sceglie: e' la ragione per cui quella pagina si puo'
+       aprire alle agenzie senza che una scriva nelle polizze di un'altra.
+     - **una lista** (pannello admin) — compare la tendina, perche' li' si
+       carica per conto di chiunque.
+
+     `$layout` e `$base` fanno il resto: quale layout avvolge la pagina e su
+     quale prefisso di URL vanno i form. --}}
+@extends($layout)
+
+@section('title', 'Importa polizze')
 
 @push('head')
-    @include('agencies._polizze_stile')
+    @include('polizze._stile')
 @endpush
 
 @section('content')
@@ -14,18 +24,33 @@
         $quando = $ultimoAggiornamento
             ? \Illuminate\Support\Carbon::parse($ultimoAggiornamento)->format('d/m/Y H:i')
             : null;
+        $scegliAgenzia = $agenzie !== null;
+        // ⚠️ Queste due righe si costruiscono qui e non con @if dentro il
+        // markup: Blade riconosce una direttiva solo se prima della `@` NON
+        // c'e' un carattere di parola, quindi `...agenzie@endif` resta testo,
+        // l'`@if` non si chiude mai e la pagina non compila. Gia' successo.
+        $dettaglio = $scegliAgenzia ? 'in tutte le agenzie' : null;
+        $riga2 = array_filter([$dettaglio, $quando ? 'aggiornato il '.$quando : null]);
     @endphp
 
     <div class="adm-pagehead">
         <div>
-            <h1>Polizze</h1>
-            <p>Carica le polizze della tua agenzia: i tuoi clienti le vedranno nell'app.</p>
+            <h1>{{ $scegliAgenzia ? 'Importa polizze' : 'Polizze' }}</h1>
+            <p>
+                @if ($scegliAgenzia)
+                    Carica le polizze di un'agenzia: i suoi clienti le vedranno nell'app.
+                @else
+                    Carica le polizze della tua agenzia: i tuoi clienti le vedranno nell'app.
+                @endif
+            </p>
         </div>
         <div class="pol-stat">
             <b>{{ number_format($inArchivio, 0, ',', '.') }}</b>
             <span>
                 {{ $inArchivio === 1 ? 'polizza in archivio' : 'polizze in archivio' }}
-                @if ($quando)<br>aggiornato il {{ $quando }}@endif
+                @foreach ($riga2 as $pezzo)
+                    <br>{{ $pezzo }}
+                @endforeach
             </span>
         </div>
     </div>
@@ -51,12 +76,12 @@
     @endif
 
     @if (session('esito'))
-        @include('agencies._polizze_esito', ['esito' => session('esito')])
+        @include('polizze._esito', ['esito' => session('esito')])
     @endif
 
     <div class="pol-layout">
         <div>
-            <form method="POST" action="{{ url('polizze/carica') }}" enctype="multipart/form-data" id="polForm">
+            <form method="POST" action="{{ url($base.'/carica') }}" enctype="multipart/form-data" id="polForm">
                 @csrf
                 <div class="pol-card">
                     <h2>Carica un file</h2>
@@ -65,6 +90,24 @@
                         solo, oppure un foglio <strong>CSV, XLSX o XLS</strong>: in quel caso al passo
                         successivo dirai tu quale colonna corrisponde a quale dato.
                     </p>
+
+                    @if ($scegliAgenzia)
+                        <div style="margin-bottom:26px;">
+                            <span class="pol-label">Agenzia di destinazione</span>
+                            <select name="agenzia_id" class="pol-select" required>
+                                <option value="">— scegli l'agenzia —</option>
+                                @foreach ($agenzie as $a)
+                                    <option value="{{ $a->id }}" @selected((int) old('agenzia_id') === (int) $a->id)>
+                                        {{ $a->nome }} — {{ $a->polizze === 0 ? 'nessuna polizza' : number_format($a->polizze, 0, ',', '.').' polizze' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <p class="pol-hint">
+                                Accanto al nome c'e' quante polizze ha gia': e' il modo per accorgersi
+                                di aver sbagliato riga <em>prima</em> di importare, non dopo.
+                            </p>
+                        </div>
+                    @endif
 
                     <label class="pol-drop" id="polDrop">
                         <input type="file" name="file" id="polFile" required
@@ -88,7 +131,7 @@
                                 <input type="radio" name="modalita" value="sostituisci">
                                 <span>
                                     <strong>Sostituisci tutto</strong>
-                                    <small>Prima cancella tutte le polizze della tua agenzia, poi carica queste.</small>
+                                    <small>Prima cancella tutte le polizze {{ $scegliAgenzia ? "dell'agenzia scelta" : 'della tua agenzia' }}, poi carica queste.</small>
                                 </span>
                             </label>
                         </div>

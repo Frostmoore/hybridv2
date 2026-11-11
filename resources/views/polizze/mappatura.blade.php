@@ -1,11 +1,11 @@
 {{-- Passo 2 dell'import polizze: si abbina ogni colonna del file a un campo
      della polizza. La preselezione viene dagli alias noti, ma decide l'operatore. --}}
-@extends('layouts.agencies')
+@extends($layout)
 
 @section('title', 'Abbina le colonne')
 
 @push('head')
-    @include('agencies._polizze_stile')
+    @include('polizze._stile')
 @endpush
 
 @section('content')
@@ -34,6 +34,11 @@
         <span class="pol-filebar__meta">
             {{ number_format($attesa['righe_totali'], 0, ',', '.') }} righe · {{ $attesa['colonne'] }} colonne
         </span>
+        @if (! empty($attesa['agenzia']))
+            <span class="pol-filebar__meta">
+                verso <strong style="color:var(--adm-ink);">{{ $attesa['agenzia'] }}</strong>
+            </span>
+        @endif
         <span style="flex:1;"></span>
         @if ($attesa['sostituisci'])
             <span class="pol-tag pol-tag--warn">Sostituisce tutto l'archivio</span>
@@ -42,7 +47,7 @@
         @endif
     </div>
 
-    <form method="POST" action="{{ url('polizze/importa') }}" id="mapForm">
+    <form method="POST" action="{{ url($base.'/importa') }}" id="mapForm">
         @csrf
 
         <div class="pol-card">
@@ -116,7 +121,7 @@
         </div>
     </form>
 
-    <form method="POST" action="{{ url('polizze/annulla') }}" id="annullaForm">@csrf</form>
+    <form method="POST" action="{{ url($base.'/annulla') }}" id="annullaForm">@csrf</form>
 @endsection
 
 @push('scripts')

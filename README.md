@@ -68,15 +68,24 @@ In alternativa, vhost Apache/XAMPP puntati a `public/` con `ServerName` corrispo
   polizza usati da più clienti — sono motivate con i numeri in `memory/decisioni.md`; la mappatura
   campo per campo sta in `memory/mappatura_ssf_polizze.md`. Copertura:
   `tests/Feature/Import/SsfImportServiceTest.php`.
-- **Import polizze dal pannello agenzie** — `App\Http\Controllers\Agencies\AgenciesImportController`
-  (`/polizze` sul dominio agencies). Ogni agenzia carica le proprie: l'id agenzia **non e' un campo
-  del form**, viene da `$operatore->agid` in sessione. Due strade: lo **ZIP SSF** si importa subito
-  (colonne a nomi fissi, lo legge `SsfImportService`), un **foglio CSV/XLSX/"XLS"** passa da una
-  pagina di **mappatura manuale** dove si abbina ogni colonna a un campo della polizza
-  (`App\Services\PolizzeSheetImportService`, che riconosce il formato dal contenuto e normalizza
-  le date in ISO). Fra i due passi il file resta in `storage/app/private/import-polizze/` e viene
-  cancellato appena l'import finisce. Copertura: `tests/Feature/Agencies/PolizzeImportTest.php` e
+- **Import polizze (due pannelli, una pagina)** — il giro sta nel trait
+  `App\Http\Controllers\Concerns\ImportaLePolizze`, montato da due controller:
+  `Agencies\AgenciesImportController` (`/polizze` sul dominio agencies) e
+  `Web\AdminImportPolizzeController` (`/importa-polizze` sul dominio principale, sessione
+  admin). L'unica differenza e' da dove esce l'id dell'agenzia: nel pannello agenzie dalla
+  sessione dell'operatore e **non e' un campo del form** (altrimenti un'agenzia potrebbe
+  scrivere nelle polizze di un'altra), nel pannello admin da una tendina, perche' li' si carica
+  per conto di chiunque. L'agenzia scelta al passo 1 viene salvata col file e riusata al passo 3,
+  cosi' non puo' cambiare per strada. Le viste stanno in `resources/views/polizze/` e si
+  adattano ai due layout via `$layout`/`$base`. Due strade: lo **ZIP SSF** si importa subito
+  (`App\Services\SsfImportService`), un **foglio CSV/XLSX/"XLS"** passa dalla **mappatura
+  manuale** delle colonne (`App\Services\PolizzeSheetImportService`, che riconosce il formato
+  dal contenuto e normalizza le date in ISO). Fra i due passi il file resta in
+  `storage/app/private/import-polizze/` e viene cancellato appena l'import finisce. Copertura:
+  `tests/Feature/Agencies/PolizzeImportTest.php`, `tests/Feature/Web/AdminImportPolizzeTest.php`,
   `tests/Feature/Import/PolizzeSheetImportServiceTest.php`.
+  ⚠️ A `/importa-polizze` stava il vecchio wizard (→ `polizze_importate`, tabella che non legge
+  nessuno): e' stato spostato a `/importa-polizze-vecchio` e non cancellato.
 - **Config di progetto** — `config/hybrid.php` (domini, JWT, import password).
 - **Mail** — SMTP (prod: Aruba, come il legacy). Test rapido:
   `php artisan tinker` → `Mail::to('tu@esempio.it')->send(new \App\Mail\TestMail());`

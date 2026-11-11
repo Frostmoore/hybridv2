@@ -25,7 +25,7 @@
         <strong>Import completato.</strong>
         {{ number_format($importate, 0, ',', '.') }}
         {{ $importate === 1 ? 'polizza caricata' : 'polizze caricate' }}
-        da <em>{{ $esito['nome'] ?? 'file' }}</em>{{ ($esito['tipo'] ?? '') === 'ssf' ? ' (export SSF)' : '' }}.
+        da <em>{{ $esito['nome'] ?? 'file' }}</em>{{ ($esito['tipo'] ?? '') === 'ssf' ? ' (export SSF)' : '' }}@if (! empty($esito['agenzia'])), in <strong>{{ $esito['agenzia'] }}</strong>@endif.
         @if (! empty($conteggi['sostituite']))
             Le polizze caricate in precedenza sono state cancellate prima di questo import.
         @endif

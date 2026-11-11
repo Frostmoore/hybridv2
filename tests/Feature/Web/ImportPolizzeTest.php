@@ -109,7 +109,7 @@ class ImportPolizzeTest extends V2TestCase
         ])->assertSee('Colonna CF non trovata');
     }
 
-    // ═══ Sistema A: importa_polizze.php (wizard admin → polizze_importate) ═══
+    // ═══ Sistema A: vecchio wizard (→ polizze_importate), ora su /importa-polizze-vecchio ═══
 
     private function adminSession(): Utente
     {
@@ -122,7 +122,7 @@ class ImportPolizzeTest extends V2TestCase
 
     public function test_system_a_requires_admin(): void
     {
-        $this->get($this->host('importa-polizze'))->assertRedirect();
+        $this->get($this->host('importa-polizze-vecchio'))->assertRedirect();
     }
 
     public function test_system_a_full_wizard_flow(): void
@@ -136,7 +136,7 @@ class ImportPolizzeTest extends V2TestCase
             ."RSSMRA80A01H501Z;A100;Generali;31/12/2026;1.234,56\n"
             ."SCONOSCIUTO;B200;Allianz;2026-06-30;100\n";
 
-        $response = $this->actingAs($admin, 'admin')->post($this->host('importa-polizze'), [
+        $response = $this->actingAs($admin, 'admin')->post($this->host('importa-polizze-vecchio'), [
             'step' => '1',
             'id_agenzia' => $agency->id,
             'delimiter' => ';',
@@ -149,7 +149,7 @@ class ImportPolizzeTest extends V2TestCase
         $response->assertOk()->assertSee('Mappa le colonne')->assertSee('codice_fiscale');
 
         // Process (AJAX)
-        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze/process'), [
+        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze-vecchio/process'), [
             'mapping' => [
                 'cf' => 'codice_fiscale',
                 'numero_polizza' => 'num_polizza',
@@ -182,24 +182,24 @@ class ImportPolizzeTest extends V2TestCase
         $csv = "cf;polizza;compagnia\nNUOVOCF;DUP1;Nuova\n";
 
         // onDup = skip (default)
-        $this->actingAs($admin, 'admin')->post($this->host('importa-polizze'), [
+        $this->actingAs($admin, 'admin')->post($this->host('importa-polizze-vecchio'), [
             'step' => '1', 'id_agenzia' => $agency->id, 'delimiter' => ';',
             'on_duplicate' => 'skip',
             'polizze_file' => $this->csvUpload($csv),
         ]);
-        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze/process'), [
+        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze-vecchio/process'), [
             'mapping' => ['cf' => 'cf', 'numero_polizza' => 'polizza', 'compagnia' => 'compagnia'],
             'datefmt' => [],
         ])->assertJsonPath('saltati', 1);
         $this->assertSame('Vecchia', PolizzaImportata::where('numero_polizza', 'DUP1')->first()->compagnia);
 
         // onDup = update
-        $this->actingAs($admin, 'admin')->post($this->host('importa-polizze'), [
+        $this->actingAs($admin, 'admin')->post($this->host('importa-polizze-vecchio'), [
             'step' => '1', 'id_agenzia' => $agency->id, 'delimiter' => ';',
             'on_duplicate' => 'update',
             'polizze_file' => $this->csvUpload($csv),
         ]);
-        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze/process'), [
+        $this->actingAs($admin, 'admin')->postJson($this->host('importa-polizze-vecchio/process'), [
             'mapping' => ['cf' => 'cf', 'numero_polizza' => 'polizza', 'compagnia' => 'compagnia'],
             'datefmt' => [],
         ])->assertJsonPath('aggiornati', 1);

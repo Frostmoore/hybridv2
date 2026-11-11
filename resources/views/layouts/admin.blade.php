@@ -5,7 +5,7 @@
     $nav = [
         ['label' => 'Agenzie', 'url' => url('home'), 'active' => request()->is('home')],
         ['label' => 'Utenti', 'url' => url('utenti'), 'active' => request()->is('utenti')],
-        ['label' => 'Importa Polizze', 'url' => url('importa-polizze'), 'active' => request()->is('importa-polizze')],
+        ['label' => 'Importa Polizze', 'url' => url('importa-polizze'), 'active' => request()->is('importa-polizze') || request()->is('importa-polizze/*')],
         ['label' => 'Notifiche', 'url' => url('notifiche'), 'active' => request()->is('notifiche')],
     ];
 @endphp
