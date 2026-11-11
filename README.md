@@ -61,6 +61,13 @@ In alternativa, vhost Apache/XAMPP puntati a `public/` con `ServerName` corrispo
 - **Auth API** — `App\Services\JwtService` (HS256 compatibile col legacy, secret in
   `JWT_SECRET`) + middleware `auth.jwt` (`App\Http\Middleware\AuthenticateJwt`);
   i claims sono in `$request->attributes->get('jwt')`.
+- **Import polizze da SSF** — `App\Services\SsfImportService` legge lo ZIP di CSV esportato dai
+  gestionali delle agenzie (formati v7 e v10, un solo parser perché si legge per nome di colonna) e
+  riempie la tabella `polizze`, quella che l'endpoint `polizze/index.php` serve all'app. Le regole
+  di selezione — solo polizze attive, solo persone fisiche con codice fiscale, via i numeri di
+  polizza usati da più clienti — sono motivate con i numeri in `memory/decisioni.md`; la mappatura
+  campo per campo sta in `memory/mappatura_ssf_polizze.md`. Copertura:
+  `tests/Feature/Import/SsfImportServiceTest.php`.
 - **Config di progetto** — `config/hybrid.php` (domini, JWT, import password).
 - **Mail** — SMTP (prod: Aruba, come il legacy). Test rapido:
   `php artisan tinker` → `Mail::to('tu@esempio.it')->send(new \App\Mail\TestMail());`
