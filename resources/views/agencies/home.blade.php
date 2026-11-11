@@ -17,6 +17,10 @@
             <span class="adm-tile__icon"><i class="fas fa-users"></i></span>
             <span class="adm-tile__label">Gestione Utenti</span>
         </a>
+        <a href="{{ url('polizze') }}" class="adm-tile">
+            <span class="adm-tile__icon"><i class="fas fa-file-shield"></i></span>
+            <span class="adm-tile__label">Polizze</span>
+        </a>
         <a href="{{ url('notifiche/tutti') }}" class="adm-tile adm-tile--green">
             <span class="adm-tile__icon"><i class="fas fa-bullhorn"></i></span>
             <span class="adm-tile__label">Notifica a Tutti</span>

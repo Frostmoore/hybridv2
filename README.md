@@ -68,6 +68,15 @@ In alternativa, vhost Apache/XAMPP puntati a `public/` con `ServerName` corrispo
   polizza usati da più clienti — sono motivate con i numeri in `memory/decisioni.md`; la mappatura
   campo per campo sta in `memory/mappatura_ssf_polizze.md`. Copertura:
   `tests/Feature/Import/SsfImportServiceTest.php`.
+- **Import polizze dal pannello agenzie** — `App\Http\Controllers\Agencies\AgenciesImportController`
+  (`/polizze` sul dominio agencies). Ogni agenzia carica le proprie: l'id agenzia **non e' un campo
+  del form**, viene da `$operatore->agid` in sessione. Due strade: lo **ZIP SSF** si importa subito
+  (colonne a nomi fissi, lo legge `SsfImportService`), un **foglio CSV/XLSX/"XLS"** passa da una
+  pagina di **mappatura manuale** dove si abbina ogni colonna a un campo della polizza
+  (`App\Services\PolizzeSheetImportService`, che riconosce il formato dal contenuto e normalizza
+  le date in ISO). Fra i due passi il file resta in `storage/app/private/import-polizze/` e viene
+  cancellato appena l'import finisce. Copertura: `tests/Feature/Agencies/PolizzeImportTest.php` e
+  `tests/Feature/Import/PolizzeSheetImportServiceTest.php`.
 - **Config di progetto** — `config/hybrid.php` (domini, JWT, import password).
 - **Mail** — SMTP (prod: Aruba, come il legacy). Test rapido:
   `php artisan tinker` → `Mail::to('tu@esempio.it')->send(new \App\Mail\TestMail());`

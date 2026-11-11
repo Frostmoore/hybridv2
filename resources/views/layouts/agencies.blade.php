@@ -5,6 +5,7 @@
     $nav = $op ? array_filter([
         ['label' => 'Home', 'url' => url('home'), 'active' => request()->is('home')],
         ['label' => 'Utenti', 'url' => url('utenti'), 'active' => request()->is('utenti')],
+        ['label' => 'Polizze', 'url' => url('polizze'), 'active' => request()->is('polizze') || request()->is('polizze/*')],
         ['label' => 'Notifiche', 'url' => url('notifiche/tutti'), 'active' => request()->is('notifiche/*')],
         $isSuper ? ['label' => 'Operatori', 'url' => url('operatori'), 'active' => request()->is('operatori*')] : null,
     ]) : [];

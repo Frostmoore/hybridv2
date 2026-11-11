@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Agencies\AgenciesAuthController;
+use App\Http\Controllers\Agencies\AgenciesImportController;
 use App\Http\Controllers\Agencies\AgenciesNotificationController;
 use App\Http\Controllers\Agencies\AgenciesPanelController;
 use App\Http\Controllers\Agencies\OperatorApiController;
@@ -34,6 +35,16 @@ Route::middleware(['auth:operatore', 'operatore.timeout'])->group(function () {
     Route::get('home', [AgenciesPanelController::class, 'home']);
     Route::get('utenti', [AgenciesPanelController::class, 'utenti']);
     Route::get('export-utenti', [AgenciesPanelController::class, 'exportUtenti']);
+
+    // Polizze — import dell'export SSF o di un foglio con le colonne mappate a
+    // mano. L'agenzia di destinazione NON e' un parametro: la mette il
+    // controller dall'operatore in sessione, cosi' un'agenzia non puo'
+    // scrivere nelle polizze di un'altra.
+    Route::get('polizze', [AgenciesImportController::class, 'page']);
+    Route::post('polizze/carica', [AgenciesImportController::class, 'carica']);
+    Route::get('polizze/mappatura', [AgenciesImportController::class, 'mappatura']);
+    Route::post('polizze/importa', [AgenciesImportController::class, 'importa']);
+    Route::post('polizze/annulla', [AgenciesImportController::class, 'annulla']);
 
     // Gestione operatori — SOLO super-admin (config hybrid.agencies_superadmins)
     Route::middleware('agencies.superadmin')->group(function () {
