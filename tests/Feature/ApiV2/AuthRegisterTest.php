@@ -88,10 +88,13 @@ class AuthRegisterTest extends V2TestCase
 
         $this->postJson(self::URL, $this->validPayload($agency->id))
             ->assertStatus(201)
-            ->assertJsonPath('data.message', 'Registrazione completata. Controlla la tua email per attivare l\'account.');
+            ->assertJsonPath('data.message', 'Registrazione completata. Controlla la tua email per attivare l\'account.')
+            ->assertJsonPath('data.attivo', false)
+            ->assertJsonPath('data.email_inviata', true);
 
         $user = Cliente::where('username', 'nuovo.utente')->first();
         $this->assertNotNull($user);
+        // Mail partita: si resta in attesa del click sul link, come sempre.
         $this->assertSame('0', $user->active);
         $this->assertSame('NVUTNT90A01H501X', $user->cf);          // CF uppercased
         $this->assertSame('nuovo@test.it', $user->email);          // email normalizzata
@@ -108,6 +111,32 @@ class AuthRegisterTest extends V2TestCase
                 && $mail->subjectLine === 'Attiva il tuo account su Agenzia Test.';
         });
         Mail::assertSent(LegacyHtmlMail::class, fn (LegacyHtmlMail $mail) => $mail->hasTo('info@test.it'));
+    }
+
+    /**
+     * La casella SMTP non funziona (e' successo davvero l'11/11/2026 sul legacy:
+     * "SMTP Error"). La registrazione non deve fallire, e l'utente non deve
+     * restare chiuso fuori in attesa di un link che non arrivera' mai.
+     */
+    public function test_se_la_mail_non_parte_l_utente_e_attivo_e_puo_entrare(): void
+    {
+        $agency = $this->makeAgency();
+        Mail::shouldReceive('to')->andThrow(new \RuntimeException('SMTP Error: Could not authenticate.'));
+
+        $this->postJson(self::URL, $this->validPayload($agency->id))
+            ->assertStatus(201)
+            ->assertJsonPath('data.message', 'Registrazione completata. Puoi accedere subito.')
+            ->assertJsonPath('data.attivo', true)
+            ->assertJsonPath('data.email_inviata', false);
+
+        $this->assertSame('1', Cliente::where('username', 'nuovo.utente')->value('active'));
+
+        // E il login, che prima rispondeva "Account non attivo", ora passa.
+        $this->postJson('/res/api/v2/auth/login.php', [
+            'agency_id' => (string) $agency->id,
+            'username' => 'nuovo.utente',
+            'password' => 'Password!1',
+        ])->assertOk();
     }
 
     public function test_no_agency_notice_when_agency_email_empty(): void

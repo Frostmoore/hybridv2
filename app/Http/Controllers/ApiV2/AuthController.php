@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
@@ -243,7 +244,11 @@ class AuthController extends V2Controller
         $activateUrl = rtrim((string) config('app.url'), '/')
             .'/attivacliente.php?a='.urlencode((string) $user->id).'&b='.urlencode($activationToken);
 
-        // Email attivazione all'utente (non bloccante, come il legacy)
+        // Email attivazione all'utente: non bloccante, e se non parte l'utente
+        // si attiva da solo (decisione del 2026-11-12). Prima restava `active
+        // = '0'` e al login si sentiva dire "controlla la tua email" per una
+        // mail mai partita: chiuso fuori per sempre, senza saperlo.
+        $mailInviata = false;
         try {
             Mail::to($email)->send(new LegacyHtmlMail(
                 subjectLine: 'Attiva il tuo account su '.$agencyName.'.',
@@ -252,8 +257,16 @@ class AuthController extends V2Controller
                     .'<p><a href="'.$activateUrl.'">Attiva il tuo account</a></p>',
                 fromName: $agencyName,
             ));
-        } catch (\Throwable) {
-            // registrato comunque, email non partita
+            $mailInviata = true;
+        } catch (\Throwable $e) {
+            Log::warning('Registrazione: mail di attivazione non partita, utente attivato in automatico', [
+                'cliente' => $user->id,
+                'errore' => $e->getMessage(),
+            ]);
+        }
+
+        if (! $mailInviata) {
+            $user->forceFill(['active' => '1'])->save();
         }
 
         // Avviso all'agenzia (non bloccante)
@@ -272,7 +285,13 @@ class AuthController extends V2Controller
             }
         }
 
-        return ApiResponse::ok(['message' => 'Registrazione completata. Controlla la tua email per attivare l\'account.'], 201);
+        return ApiResponse::ok([
+            'message' => $mailInviata
+                ? 'Registrazione completata. Controlla la tua email per attivare l\'account.'
+                : 'Registrazione completata. Puoi accedere subito.',
+            'attivo' => ! $mailInviata,
+            'email_inviata' => $mailInviata,
+        ], 201);
     }
 
     // ─── POST auth/forgot-password.php ───────────────────────────────────
